@@ -1,0 +1,12 @@
+{
+  "prettier.bracketSpacing": false,
+  "prettier.semi": false,
+  "prettier.singleQuote": true,
+  "prettier.trailingComma": "es5",
+  "prettier.disableLanguages": ["html"],
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "files.autoSave": "onWindowChange",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.insertFinalNewline": true
+}

@@ -1,0 +1,32 @@
+{
+  "name": "arcjet-dht",
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "author": "cryptoquick <cryptoquick@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node lib/index.js",
+    "build": "tsc -p ./tsconfig.json",
+    "build:watch": "tsc -p ./tsconfig.json --watch",
+    "test": "ava \"**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.5",
+    "ava": "^1.0.0-beta.6",
+    "ts-node": "^7.0.0",
+    "typescript": "^3.0.1"
+  },
+  "dependencies": {
+    "big-integer": "^1.6.33",
+    "js-sha3": "^0.7.0"
+  },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  }
+}
