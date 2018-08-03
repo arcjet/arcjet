@@ -9,5 +9,6 @@ export type Subscribers = {[key: string]: Subscriber}
 
 export interface Result {
   hash: Hash
-  data: Data
+  data?: Data
+  error?: string
 }

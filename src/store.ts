@@ -55,6 +55,11 @@ class Store {
     assert.ok(data.length > 0)
 
     const hash = sha3_256(data)
+
+    if (this.lengths[hash] && this.lengths[hash] > 0) {
+      return hash
+    }
+
     const fd = await this.open()
     await appendFile(fd, `${hash} ${data}\n`, 'utf8')
     this.update(hash, data.length)
@@ -69,6 +74,14 @@ class Store {
     const position = this.positions[hash]
     const length = this.lengths[hash]
     const readLength = this.shaLength + 1 + length
+
+    if (!position && !length) {
+      return {
+        hash,
+        data: undefined,
+        error: 'NOTFOUND',
+      }
+    }
 
     const fd = await this.open()
     const {buffer} = await read(
