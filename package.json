@@ -1,17 +1,22 @@
 {
   "name": "arcjet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "author": "Hunter Trujillo <cryptoquick@gmail.com>",
   "license": "MIT",
+  "repository": "arcjet/arcjet",
+  "homepage": "https://www.arcjet.com",
+  "bin": {
+    "arcjet": "lib/arcjet.js"
+  },
   "scripts": {
-    "start": "node lib/index.js",
     "build": "tsc -p ./tsconfig.json",
     "build:watch": "tsc -p ./tsconfig.json --watch",
     "test": "ava \"**/*.test.ts\""
   },
   "devDependencies": {
     "@types/express": "^4.16.0",
+    "@types/got": "^8.3.3",
     "@types/node": "^10.5.5",
     "ava": "^1.0.0-beta.6",
     "ts-node": "^7.0.0",
@@ -19,7 +24,10 @@
   },
   "dependencies": {
     "big-integer": "^1.6.33",
+    "body-parser": "^1.18.3",
+    "caporal": "^0.10.0",
     "express": "^4.16.3",
+    "got": "^9.0.0",
     "js-sha3": "^0.7.0"
   },
   "ava": {

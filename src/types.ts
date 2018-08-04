@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+
 export type Path = string
 export type Hash = string
 export type Data = string
@@ -9,6 +11,6 @@ export type Subscribers = {[key: string]: Subscriber}
 
 export interface Result {
   hash: Hash
-  data?: Data
+  data?: fs.ReadStream
   error?: string
 }

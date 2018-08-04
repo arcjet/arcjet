@@ -30,5 +30,5 @@ const hash = await store.set('data')
 Record format (quotes added for clarity):
 
 ```
-"record sha"\t"message mac"\t"owner sha"\t"...data"\n # record
+"record sha"\t"owner sha"\t"message mac"\t"...data"\n # record
 ```

@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+import * as program from 'caporal'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as got from 'got'
+
+import Store from './store'
+import {server} from './server'
+import {awaitOn} from './utils'
+const pkg = require('../package.json')
+
+const DEFAULT_PORT = 3000
+
+program.version(pkg.version)
+
+program
+  .command('start', 'Start server with a database file')
+  .argument('<file>', 'File to start the database with')
+  .option('--port <port>', 'Port number to listen on', program.INT, 3000, true)
+  .action(async (args, options, logger) => {
+    try {
+      const store = new Store()
+      await store.init(args.file)
+      await server(store, parseInt(options.port, 10) || DEFAULT_PORT)
+      logger.info('Server started')
+    } catch (err) {
+      logger.error(err)
+    }
+  })
+
+program
+  .command('set', 'Add a file to the Arcjet network')
+  .argument('<file>', 'File to add to the network')
+  .option('--port <port>', 'Port number to connect to', program.INT, 3000, true)
+  .action(async (args, options, logger) => {
+    try {
+      const request = got.stream(
+        `http://localhost:${options.port || DEFAULT_PORT}/`,
+        {
+          method: 'POST',
+          encoding: 'utf8',
+        }
+      )
+      const stream = fs.createReadStream(path.resolve(process.cwd(), args.file))
+      stream.pipe(request)
+      const response = await awaitOn<got.GotEmitter, got.Response<string>>(
+        request,
+        'response'
+      )
+      console.log(response)
+      logger.info(response.statusCode as any)
+      logger.info(response.statusMessage as any)
+      logger.info(response.body)
+    } catch (err) {
+      logger.error(err)
+    }
+  })
+
+program.parse(process.argv)

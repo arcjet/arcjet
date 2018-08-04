@@ -4,7 +4,7 @@ import {sha3_256} from 'js-sha3'
 import {strict as assert} from 'assert'
 
 import {Path, Hash, Data, Result} from './types'
-import {open, close, read, appendFile} from './utils'
+import {open, close, appendFile} from './utils'
 
 export type HashInt = {[hash: string]: number}
 
@@ -83,20 +83,15 @@ class Store {
       }
     }
 
-    const fd = await this.open()
-    const {buffer} = await read(
-      fd,
-      Buffer.alloc(readLength, 0, 'utf8'),
-      0,
-      readLength,
-      position
-    )
-    await this.close(fd)
-    const result = buffer.toString('utf8')
-    const [resultHash, rawData] = result.split(' ')
+    const stream = fs.createReadStream(this.path, {
+      encoding: 'utf8',
+      start: position + this.shaLength + 1,
+      end: position + readLength,
+    })
+
     return {
-      hash: resultHash,
-      data: rawData,
+      hash,
+      data: stream,
     }
   }
 }
