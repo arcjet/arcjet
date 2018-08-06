@@ -23,9 +23,11 @@
     "typescript": "^3.0.1"
   },
   "dependencies": {
+    "@types/cors": "^2.8.4",
     "big-integer": "^1.6.33",
     "body-parser": "^1.18.3",
     "caporal": "^0.10.0",
+    "cors": "^2.8.4",
     "express": "^4.16.3",
     "got": "^9.0.0",
     "js-sha3": "^0.7.0"

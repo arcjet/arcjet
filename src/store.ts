@@ -73,7 +73,6 @@ class Store {
 
     const position = this.positions[hash]
     const length = this.lengths[hash]
-    const readLength = this.shaLength + 1 + length
 
     if (!position && !length) {
       return {
@@ -86,7 +85,7 @@ class Store {
     const stream = fs.createReadStream(this.path, {
       encoding: 'utf8',
       start: position + this.shaLength + 1,
-      end: position + readLength,
+      end: position + this.shaLength + 1 + length - 1,
     })
 
     return {

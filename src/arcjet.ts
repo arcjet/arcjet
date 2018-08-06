@@ -6,7 +6,6 @@ import * as got from 'got'
 
 import Store from './store'
 import {server} from './server'
-import {awaitOn} from './utils'
 const pkg = require('../package.json')
 
 const DEFAULT_PORT = 3000
@@ -41,16 +40,19 @@ program
           encoding: 'utf8',
         }
       )
-      const stream = fs.createReadStream(path.resolve(process.cwd(), args.file))
-      stream.pipe(request)
-      const response = await awaitOn<got.GotEmitter, got.Response<string>>(
-        request,
-        'response'
+
+      const stream = fs.createReadStream(
+        path.resolve(process.cwd(), args.file),
+        'base64'
       )
-      console.log(response)
-      logger.info(response.statusCode as any)
-      logger.info(response.statusMessage as any)
-      logger.info(response.body)
+
+      stream.pipe(request)
+
+      request.on('response', response => {
+        response.on('data', data => {
+          logger.info(data.toString())
+        })
+      })
     } catch (err) {
       logger.error(err)
     }

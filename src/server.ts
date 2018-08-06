@@ -1,5 +1,5 @@
 import * as express from 'express'
-import * as bodyParser from 'body-parser'
+import * as cors from 'cors'
 
 import Store from './store'
 
@@ -7,12 +7,7 @@ export const server = (store: Store, port: number) =>
   new Promise((resolve, reject) => {
     const app = express()
 
-    app.use(
-      bodyParser.raw({
-        type: '*/*',
-        limit: '1gb',
-      })
-    )
+    app.use(cors())
 
     app.get('/:hash', async (req, res) => {
       try {
@@ -33,10 +28,18 @@ export const server = (store: Store, port: number) =>
 
     app.post('/', async (req, res) => {
       try {
-        const hash = await store.set(req.body.toString('utf8'))
-        res.statusCode = 200
-        res.contentType('text/plain')
-        res.send(hash)
+        const chunks: Buffer[] = []
+
+        req.on('data', (data: Buffer) => {
+          chunks.push(data)
+        })
+
+        req.on('end', async () => {
+          const hash = await store.set(Buffer.concat(chunks).toString('utf8'))
+          res.statusCode = 200
+          res.contentType('text/plain')
+          res.send(hash)
+        })
       } catch (err) {
         console.error(err)
         res.status(500).send(err)
