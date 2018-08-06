@@ -1,15 +1,25 @@
 import * as express from 'express'
 import * as cors from 'cors'
+import * as cookieParser from 'cookie-parser'
 
 import Store from './store'
+import client from './client'
 
 export const server = (store: Store, port: number) =>
   new Promise((resolve, reject) => {
     const app = express()
 
     app.use(cors())
+    app.use(cookieParser())
+
+    app.get('/', (req, res) => {
+      res.status(200).send(client(!!req.cookies.arcjet))
+    })
 
     app.get('/:hash', async (req, res) => {
+      if (req.params.hash.length !== 64) {
+        return
+      }
       try {
         const {data, error} = await store.get(req.params.hash)
         if (error && error === 'NOTFOUND') {

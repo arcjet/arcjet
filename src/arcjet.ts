@@ -43,7 +43,7 @@ program
 
       const stream = fs.createReadStream(
         path.resolve(process.cwd(), args.file),
-        'base64'
+        'utf8'
       )
 
       stream.pipe(request)
