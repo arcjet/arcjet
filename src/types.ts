@@ -14,3 +14,19 @@ export interface Result {
   data?: fs.ReadStream
   error?: string
 }
+
+export interface Key {
+  privateKey: string
+  publicKey: string
+  hash: Hash
+}
+
+export interface ArcjetCookies {
+  ARCJET_PRIVATE_KEY: string
+  ARCJET_PUBLIC_KEY: string
+  ARCJET_OWNER_HASH: string
+}
+
+export type FalsyString = string | false
+export type HashInt = {[hash: string]: number}
+export type HashHash = {[hash: string]: Hash}

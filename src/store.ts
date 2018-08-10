@@ -1,28 +1,38 @@
 import * as fs from 'fs'
 import * as readline from 'readline'
-import {sha3_256} from 'js-sha3'
 import {strict as assert} from 'assert'
+import {sha3_256, sha3_512} from 'js-sha3'
+const sphincs = require('sphincs')
 
-import {Path, Hash, Data, Result} from './types'
-import {open, close, appendFile} from './utils'
-
-export type HashInt = {[hash: string]: number}
+import {
+  Path,
+  Hash,
+  Data,
+  Result,
+  ArcjetCookies,
+  HashInt,
+  HashHash,
+} from './types'
+import {open, close, appendFile, arrToHex, getFixedHex} from './utils'
 
 class Store {
   private positions: HashInt = {}
   private lengths: HashInt = {}
+  private owners: HashHash = {}
   private path: Path
   private dblen: number = 0
   private shaLength = 64
+  private defaultOwnerHash = '0'.repeat(this.shaLength)
 
   public open = async (path: Path = this.path): Promise<number> =>
     await open(path, 'a+')
   public close = async (fd: number): Promise<void> => await close(fd)
 
-  private update(hash: Hash, length: number) {
+  private update(hash: Hash, length: number, ownerHash: Hash) {
     this.positions[hash] = this.dblen
     this.lengths[hash] = length
-    this.dblen = this.dblen + this.shaLength + 1 + length + 1
+    this.owners[ownerHash] = hash
+    this.dblen = this.dblen + length
   }
 
   public init = (path: Path) =>
@@ -34,7 +44,9 @@ class Store {
 
         rl.on('line', line => {
           const hash = line.substr(0, this.shaLength)
-          this.update(hash, line.length - 1 - this.shaLength)
+          const ownerHash = line.substr(this.shaLength + 1, this.shaLength)
+          console.log('hash', hash)
+          this.update(hash, line.length + 1, ownerHash)
         })
 
         rl.on('close', () => {
@@ -50,26 +62,80 @@ class Store {
       }
     })
 
-  public async set(data: Data): Promise<Hash> {
-    assert.ok(typeof data === 'string')
-    assert.ok(data.length > 0)
+  public async set(
+    data: Data,
+    auth: ArcjetCookies,
+    encoding = 'utf8',
+    type = 'text/plain',
+    tag = ''
+  ): Promise<Hash> {
+    assert.ok(typeof data === 'string', 'Data must be of type string for now')
+    assert.ok(data.length > 0, 'Data must not be empty')
+    assert.ok(data.length <= 1_000_000_000, 'Data must not be larger than 1GB')
+    assert.ok(data.includes('\t') === false, 'Data must encode all tabs')
+    assert.ok(data.includes('\n') === false, 'Data must encode all newlines')
+    assert.ok(
+      auth.ARCJET_OWNER_HASH.length === this.shaLength,
+      'Supplied Owner Hash invalid'
+    )
+    assert.ok(
+      encoding.length <= 32,
+      'Encoding length must be less than or equal to 32 characters'
+    )
+    assert.ok(
+      type.length <= 32,
+      'Type length must be less than or equal to 32 characters'
+    )
+    assert.ok(
+      tag.length <= 32,
+      'Tag length must be less than or equal to 32 characters'
+    )
+    assert.ok(tag.length > 0, 'Tag must be provided')
 
-    const hash = sha3_256(data)
+    const dataHash = sha3_512(data)
 
-    if (this.lengths[hash] && this.lengths[hash] > 0) {
-      return hash
+    const signature = arrToHex(
+      await sphincs.sign(dataHash, auth.ARCJET_PRIVATE_KEY)
+    )
+
+    assert.ok(
+      signature.length === 82256,
+      'SPHINCS cryptographic signature must be 82k in length'
+    )
+
+    const ownerHash = auth.ARCJET_OWNER_HASH
+    const parentHash = this.owners[ownerHash] || this.defaultOwnerHash
+
+    const record = [
+      ownerHash, // 64
+      parentHash, // 64
+      dataHash, // 128
+      encoding.padEnd(32, ' '), // 32
+      type.padEnd(32, ' '), // 32
+      tag.padEnd(32, ' '), // 32
+      signature, // 82256
+      getFixedHex(Date.now(), 16), // 16
+      data, // <1000000000 (1GB)
+    ].join('\t')
+
+    const recordHash = sha3_256(record)
+
+    if (this.lengths[recordHash] && this.lengths[recordHash] > 0) {
+      return recordHash
     }
 
+    const recordString = [recordHash, record].join('\t') + '\n'
+
     const fd = await this.open()
-    await appendFile(fd, `${hash} ${data}\n`, 'utf8')
-    this.update(hash, data.length)
+    await appendFile(fd, recordString, 'utf8')
+    this.update(recordHash, recordString.length, ownerHash)
     await this.close(fd)
-    return hash
+    return recordHash
   }
 
   public async get(hash: Hash): Promise<Result> {
     assert.ok(typeof hash === 'string')
-    assert.ok(hash.length === 64)
+    assert.ok(hash.length === this.shaLength)
 
     const position = this.positions[hash]
     const length = this.lengths[hash]
@@ -84,8 +150,8 @@ class Store {
 
     const stream = fs.createReadStream(this.path, {
       encoding: 'utf8',
-      start: position + this.shaLength + 1,
-      end: position + this.shaLength + 1 + length - 1,
+      start: position + this.shaLength - 2,
+      end: position + length - 2,
     })
 
     return {

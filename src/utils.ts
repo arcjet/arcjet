@@ -19,3 +19,9 @@ export const awaitOn = <R extends any, T extends {}>(
       reject(err)
     })
   })
+
+export const getFixedHex = (num: number, length: number) =>
+  num.toString(16).padStart(length, '0')
+
+export const arrToHex = (arr: Uint8Array): string =>
+  Buffer.from(arr).toString('hex')
