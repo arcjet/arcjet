@@ -3,7 +3,9 @@
 ## Example
 
 ```js
-const listener = (hash, data) => {console.log(hash, data)}
+const listener = (hash, data) => {
+  console.log(hash, data)
+}
 store.listen(listener)
 const hash = await store.set('data')
 // logs: sha data
@@ -38,7 +40,6 @@ const record = [
   type.padEnd(32, ' '), // 32
   tag.padEnd(32, ' '), // 32
   signature, // 82256
-  getFixedHex(Date.now(), 16), // 16
   data, // <1000000000 (1GB)
 ].join('\t')
 
@@ -49,6 +50,12 @@ const line = [recordHash, record].join('\t') + '\n'
 
 - Record Hash
 - Owner ID - Points to an owner record hash, that contains a public key for that owner. That is a record used to begin a chain of records.
+
+## Query Interface
+
+Not Yet Implemented
+
+`/query/{ownerHash}/tag/{limit}/{skip}`
 
 ## Security Considerations
 

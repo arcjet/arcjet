@@ -1,6 +1,7 @@
 import test from 'ava'
 import * as got from 'got'
 import * as cookie from 'cookie'
+import {parseRecord} from './parser'
 
 const host = 'localhost:3000'
 
@@ -47,19 +48,22 @@ test('store sets a value and returns expected SHA3', async t => {
     },
   })
 
-  // t.is(
-  //   res.body,
-  //   '26dc86169900f67c9a79aea4f5ae60131479a6cbc06047555044835e4d1b4e7f'
-  // ) // can't test because of dates
   t.is(res.body.length, 64)
+
+  const record = await got.get(`http://localhost:3000/store/${res.body}`)
+
+  t.is(
+    parseRecord(record.body).dataHash,
+    '7f9a89bf4717a0dd75a744f89f5d27eb40bf28654c895dc103f5f280497a432bcf79001b7dc4d76f1e4453308bb15842a840f4e2f0ac1c920fc19be45c6e0fa9'
+  )
 })
 
 test('store gets first fixture value by SHA3', async t => {
   const res = await got.get(`http://localhost:3000/store/${thing1}`)
-  t.is(res.body.substr(82635), 'thing1')
+  t.is(parseRecord(res.body).data, 'thing1')
 })
 
 test('store gets last fixture value by SHA3', async t => {
   const res = await got.get(`http://localhost:3000/store/${thing2}`)
-  t.is(res.body.substr(82635), 'thing2')
+  t.is(parseRecord(res.body).data, 'thing2')
 })

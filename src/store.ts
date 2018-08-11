@@ -13,7 +13,7 @@ import {
   HashInt,
   HashHash,
 } from './types'
-import {open, close, appendFile, arrToHex, getFixedHex} from './utils'
+import {open, close, appendFile, arrToHex} from './utils'
 
 class Store {
   private positions: HashInt = {}
@@ -33,6 +33,7 @@ class Store {
     this.lengths[hash] = length
     this.owners[ownerHash] = hash
     this.dblen = this.dblen + length
+    console.log('hash', hash, 'length', length)
   }
 
   public init = (path: Path) =>
@@ -45,7 +46,6 @@ class Store {
         rl.on('line', line => {
           const hash = line.substr(0, this.shaLength)
           const ownerHash = line.substr(this.shaLength + 1, this.shaLength)
-          console.log('hash', hash)
           this.update(hash, line.length + 1, ownerHash)
         })
 
@@ -114,7 +114,6 @@ class Store {
       type.padEnd(32, ' '), // 32
       tag.padEnd(32, ' '), // 32
       signature, // 82256
-      getFixedHex(Date.now(), 16), // 16
       data, // <1000000000 (1GB)
     ].join('\t')
 
@@ -150,7 +149,7 @@ class Store {
 
     const stream = fs.createReadStream(this.path, {
       encoding: 'utf8',
-      start: position + this.shaLength - 2,
+      start: position,
       end: position + length - 2,
     })
 
