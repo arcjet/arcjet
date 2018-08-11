@@ -10,15 +10,14 @@
     "arcjet": "lib/arcjet.js"
   },
   "scripts": {
+    "start": "arcjet",
     "build": "tsc -p ./tsconfig.json",
     "build:watch": "tsc -p ./tsconfig.json --watch",
     "test": "ava \"**/*.test.ts\""
   },
   "devDependencies": {
     "@types/cookie": "^0.3.1",
-    "@types/express": "^4.16.0",
     "@types/got": "^8.3.3",
-    "@types/node": "^10.5.5",
     "ava": "^1.0.0-beta.6",
     "cookie": "^0.3.1",
     "ts-node": "^7.0.0",
@@ -27,6 +26,8 @@
   "dependencies": {
     "@types/cookie-parser": "^1.4.1",
     "@types/cors": "^2.8.4",
+    "@types/express": "^4.16.0",
+    "@types/node": "^10.5.5",
     "big-integer": "^1.6.33",
     "body-parser": "^1.18.3",
     "caporal": "^0.10.0",

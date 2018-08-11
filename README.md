@@ -1,5 +1,11 @@
 # Arcjet Network Server & Client Library
 
+[![NpmVersion](https://img.shields.io/npm/v/npm.svg)](arcjet/arcjet)
+
+Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
+
+## Background
+
 Most every current system has points of centralization. Even decentralized systems need interfaces to commonly centralized networks. These centralized networks are massive single points of failure. Failure of these systems would often result in widespread network outages and would be front-page news. This process of centralization would also result in the accumulation of wealth by centralized server operators to a degree that our civilization has never seen before.
 
 In an effort to move away from centralized systems, the Decentralized App, or "DApp" ecosystem was created. DApps were notoriously hard to develop, expensive to use, and presented a high barrier-to-entry to users.
