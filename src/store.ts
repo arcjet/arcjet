@@ -33,7 +33,7 @@ class Store {
     this.lengths[hash] = length
     this.owners[ownerHash] = hash
     this.dblen = this.dblen + length
-    console.log('hash', hash, 'length', length)
+    console.log('hash', hash, 'ownerHash', ownerHash, 'length', length)
   }
 
   public init = (path: Path) =>
@@ -125,9 +125,10 @@ class Store {
 
     const recordString = [recordHash, record].join('\t') + '\n'
 
+    this.update(recordHash, recordString.length, ownerHash)
+
     const fd = await this.open()
     await appendFile(fd, recordString, 'utf8')
-    this.update(recordHash, recordString.length, ownerHash)
     await this.close(fd)
     return recordHash
   }

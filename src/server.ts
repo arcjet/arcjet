@@ -18,6 +18,7 @@ const genKeys = async () => {
 const cookieOptions = {
   httpOnly: true,
   sameSite: true,
+  secure: process.env.NODE_ENV === 'production',
 }
 
 const hasCookies = ({
@@ -119,17 +120,21 @@ export const server = (store: Store, port: number) =>
             const encoding = req.acceptsCharsets(['utf-8'])
             const type = req.accepts(['text/plain'])
 
-            const hash = await store.set(
-              Buffer.concat(chunks).toString('utf8'),
-              req.cookies as ArcjetCookies,
-              ifFalseReturnUndefined(encoding),
-              ifFalseReturnUndefined(type),
-              req.params.tag
-            )
-
-            res.statusCode = 200
-            res.contentType('text/plain')
-            res.send(hash)
+            try {
+              const hash = await store.set(
+                Buffer.concat(chunks).toString('utf8'),
+                req.cookies as ArcjetCookies,
+                ifFalseReturnUndefined(encoding),
+                ifFalseReturnUndefined(type),
+                req.params.tag
+              )
+              res.statusCode = 200
+              res.contentType('text/plain')
+              res.send(hash)
+            } catch (err) {
+              console.error(err)
+              res.sendStatus(500)
+            }
           })
         } catch (err) {
           console.error(err)
