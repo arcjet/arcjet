@@ -181,7 +181,7 @@ class Store {
 
     let hash = this.owners[ownerHash]
     let position = this.positions[hash]
-    let length = this.lengths[hash]
+    let length = this.lengths[hash] - 2
 
     const fd = await this.open(this.path)
 
@@ -195,7 +195,7 @@ class Store {
       const record = parseRecord(recordString)
       hash = record.parentHash
       position = this.positions[hash]
-      length = this.lengths[hash]
+      length = this.lengths[hash] - 2
 
       if (tag === record.tag) {
         results.push(record)
