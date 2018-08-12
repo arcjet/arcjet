@@ -30,7 +30,7 @@ export const homepage = (hasCookie: boolean) => `<!doctype html>
             <label for="tag">tag for your data (up to 32 chars)</label>
             <input type="text" value="" id="tag" name="tag" maxlength="32" />
           </div>
-          <form method="post" action="" accept-charset="UTF-8" enctype="text/plain">
+          <form method="post" action="">
             <label for="data">data</label>
             <textarea id="data"></textarea>
             <button>upload</button>

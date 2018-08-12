@@ -1,5 +1,6 @@
 import * as express from 'express'
 import * as cors from 'cors'
+import * as bodyParser from 'body-parser'
 import * as cookieParser from 'cookie-parser'
 const sphincs = require('sphincs')
 
@@ -35,8 +36,19 @@ export const server = (store: Store, port: number) =>
   new Promise((resolve, reject) => {
     const app = express()
 
-    app.use(cors())
+    var corsOptionsDelegate = function(req: express.Request, cb: any) {
+      cb(null, {origin: req.headers.origin, credentials: true})
+    }
+
+    app.use(cors(corsOptionsDelegate))
     app.use(cookieParser())
+    app.use(
+      bodyParser.text({
+        defaultCharset: 'utf-8',
+        limit: '1gb',
+        type: '*/*',
+      })
+    )
 
     app.get('/', (req, res) => {
       res.status(200).send(homepage(hasCookies(req.cookies)))
@@ -110,32 +122,45 @@ export const server = (store: Store, port: number) =>
         res.sendStatus(401)
       } else {
         try {
-          const chunks: Buffer[] = []
+          const encoding = req.acceptsCharsets(['utf-8'])
+          const type = req.accepts(['text/plain'])
 
-          req.on('data', (data: Buffer) => {
-            chunks.push(data)
-          })
+          if (req.body) {
+            const hash = await store.set(
+              req.body,
+              req.cookies,
+              ifFalseReturnUndefined(encoding),
+              ifFalseReturnUndefined(type),
+              req.params.tag
+            )
+            res.statusCode = 200
+            res.contentType('text/plain')
+            res.send(hash)
+          } else {
+            const chunks: Buffer[] = []
 
-          req.on('end', async () => {
-            const encoding = req.acceptsCharsets(['utf-8'])
-            const type = req.accepts(['text/plain'])
+            req.on('data', (data: Buffer) => {
+              chunks.push(data)
+            })
 
-            try {
-              const hash = await store.set(
-                Buffer.concat(chunks).toString('utf8'),
-                req.cookies as ArcjetCookies,
-                ifFalseReturnUndefined(encoding),
-                ifFalseReturnUndefined(type),
-                req.params.tag
-              )
-              res.statusCode = 200
-              res.contentType('text/plain')
-              res.send(hash)
-            } catch (err) {
-              console.error(err)
-              res.sendStatus(500)
-            }
-          })
+            req.on('end', async () => {
+              try {
+                const hash = await store.set(
+                  Buffer.concat(chunks).toString('utf8'),
+                  req.cookies as ArcjetCookies,
+                  ifFalseReturnUndefined(encoding),
+                  ifFalseReturnUndefined(type),
+                  req.params.tag
+                )
+                res.statusCode = 200
+                res.contentType('text/plain')
+                res.send(hash)
+              } catch (err) {
+                console.error(err)
+                res.sendStatus(500)
+              }
+            })
+          }
         } catch (err) {
           console.error(err)
           res.sendStatus(500)
@@ -152,6 +177,10 @@ export const server = (store: Store, port: number) =>
         console.error(err)
         res.sendStatus(500)
       }
+    })
+
+    app.get('/owner', async (req, res) => {
+      res.status(200).send(req.cookies.ARCJET_OWNER_HASH)
     })
 
     app.listen(port, () => {

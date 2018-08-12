@@ -181,21 +181,20 @@ class Store {
 
     let hash = this.owners[ownerHash]
     let position = this.positions[hash]
-    let length = this.lengths[hash] - 2
+    let length = this.lengths[hash] - 1
 
     const fd = await this.open(this.path)
 
     const results: ArcjetRecord[] = []
 
     while (hash !== '0'.repeat(64)) {
-      console.log(hash)
       let recordBuffer = Buffer.alloc(length, 'utf8')
       const {buffer} = await read(fd, recordBuffer, 0, length, position)
       const recordString = buffer.toString('utf8')
       const record = parseRecord(recordString)
       hash = record.parentHash
       position = this.positions[hash]
-      length = this.lengths[hash] - 2
+      length = this.lengths[hash] - 1
 
       if (tag === record.tag) {
         results.push(record)
