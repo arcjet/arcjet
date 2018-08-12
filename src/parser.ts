@@ -1,4 +1,6 @@
-export const parseRecord = (record: string) => {
+import {ArcjetRecord} from './types'
+
+export const parseRecord = (record: string): ArcjetRecord => {
   const [
     recordHash,
     ownerHash,

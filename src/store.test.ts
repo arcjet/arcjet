@@ -5,25 +5,16 @@ import {parseRecord} from './parser'
 
 const host = 'localhost:3000'
 
-const testCookies = [
-  cookie.serialize(
-    'ARCJET_PRIVATE_KEY',
-    'adc32d52f340a6402fcf52fa0f4dcff72ada120887e8e396acfaebb0f46cb527009f2ea0f2b0d5eebb6c69dddefa5f9d84ec721bc9a340036c388cfad0353e473d6bf7327fef46284cb65c586ef61bf006a58571b9d0d4d2f012f45ad8c1efad5e54636c2f6a037aa9ae9300f26b93a15c33fe3ed5a6dea879c10d8ebd80caf7e79984edb6f0cb7ddd9d7c25c9414d50d3268e673ce90b3269e90ee72bb0721e01cae957642f8319cc97a8e1cd15a00a216854bb09c173a75bd1660519d2e5994e2ec286ecb3344d7b6247657cb73fa9f39db21815165055822be34d10f6d6a335f1faddb9961883b534558387d9c8890494b5026d44fa753c0e47e548a7ecb1ee2b528d95503a79853482d8ed29b43787c28844e80400514cdf9afec52a880f272248b3ee889448f9805925b4ee9b1d37f38b372fa65714d3ac1b79c9a3848a53097a4b3d2570b5c5afe285835e6ed8c8cb0d119f1badb88fc95c06e71bd0f555e53ed8dae6f666f1989175addbab91e75f9bebcaaee8985be66fa312dac610c6a0116a2569ee1fa317eab6cfe43ff3933cccde69d812328aa66f9d68e6d704a497f6931adb5d77754e7c4a7260c94684e4de6bbfd3ff8fd915a7f21a304e516cd2cd551e2b363c8d66b49a500a07182bb609b7ee86318ef5435b72e727504d8ef503c5f671585adb939def38d93f3836021e3afb6bfad39167fb5fede5a6bc6c5b75452a0dfee9b09c544b7ce38af5b9ee9a1f2269823aff7a991023d8900147e2459365c64cb0053530724237256bfe4c0f7588f4c468624ef17fc1a324c9f7fa62bd5666dd1c8b2d24998d0a43e0c842ce9b21dd64f4cf8f1bc8841c184b93ce20b7f78cb5e95de30936d202ccbe2522b1b14f0da0c0e125da043a4bcf1d0183eddbafda86ffc78fa6ec1290201483adcb5b9df1cb4ded4e470f23e96b5e7830edc27ee3a64fa6085590ca756d2b21aca077f47104a0149be41bad719119585248b7f35981943ae907588f9cf17a63e97f26fa2ac48f56f78041274f6acdb190c7cbfc8da8317a031dd5c549593765e0fbfd10db707e79c4f8b97e0b8963f8cd7e697388af0d63209347e4e9266bad1d3a693f4f643d387d54e15f7c5ba4c7f2f93e0cb1380e58f0cef6c7c3674ab07a0bd7e3891eb81ce2b02000cc9226b3363f4b90639589bd6a385137eb7285c27fbbb5e9c677b336c1d8004e5c9ee68a1e82a66187f64fcae2377728e746ff9728c8e975cf6e5ea7fa3ca63766804a5ed841ab22a137164f74e6cf576d2911ea0a4122f420c4bdb866594ece6e57bec0927e9a77dc8ace5013999776b3ad9d8c3f33cd4b8d4a15bbb8c42bafe817da76486ca959173f19033103a1a4ca7091f680a28dd7146c7c6a4823d07d6c768ead7a9b40039a73bcc603adaea12f06a48570914a0d47443b39b28ea4f75c8f3c1b0c3d5b007ad3c92bea37efdafa27dfbfbc98185ebf3a7eeb3e63ff72cfd88586b64d586f4ea34e667b56e431d2dcc7eaaee8e65a64b700adf30b2a1de2b8b6'
-  ),
-  cookie.serialize(
-    'ARCJET_PUBLIC_KEY',
-    '009f2ea0f2b0d5eebb6c69dddefa5f9d84ec721bc9a340036c388cfad0353e473d6bf7327fef46284cb65c586ef61bf006a58571b9d0d4d2f012f45ad8c1efad5e54636c2f6a037aa9ae9300f26b93a15c33fe3ed5a6dea879c10d8ebd80caf7e79984edb6f0cb7ddd9d7c25c9414d50d3268e673ce90b3269e90ee72bb0721e01cae957642f8319cc97a8e1cd15a00a216854bb09c173a75bd1660519d2e5994e2ec286ecb3344d7b6247657cb73fa9f39db21815165055822be34d10f6d6a335f1faddb9961883b534558387d9c8890494b5026d44fa753c0e47e548a7ecb1ee2b528d95503a79853482d8ed29b43787c28844e80400514cdf9afec52a880f272248b3ee889448f9805925b4ee9b1d37f38b372fa65714d3ac1b79c9a3848a53097a4b3d2570b5c5afe285835e6ed8c8cb0d119f1badb88fc95c06e71bd0f555e53ed8dae6f666f1989175addbab91e75f9bebcaaee8985be66fa312dac610c6a0116a2569ee1fa317eab6cfe43ff3933cccde69d812328aa66f9d68e6d704a497f6931adb5d77754e7c4a7260c94684e4de6bbfd3ff8fd915a7f21a304e516cd2cd551e2b363c8d66b49a500a07182bb609b7ee86318ef5435b72e727504d8ef503c5f671585adb939def38d93f3836021e3afb6bfad39167fb5fede5a6bc6c5b75452a0dfee9b09c544b7ce38af5b9ee9a1f2269823aff7a991023d8900147e2459365c64cb0053530724237256bfe4c0f7588f4c468624ef17fc1a324c9f7fa62bd5666dd1c8b2d24998d0a43e0c842ce9b21dd64f4cf8f1bc8841c184b93ce20b7f78cb5e95de30936d202ccbe2522b1b14f0da0c0e125da043a4bcf1d0183eddbafda86ffc78fa6ec1290201483adcb5b9df1cb4ded4e470f23e96b5e7830edc27ee3a64fa6085590ca756d2b21aca077f47104a0149be41bad719119585248b7f35981943ae907588f9cf17a63e97f26fa2ac48f56f78041274f6acdb190c7cbfc8da8317a031dd5c549593765e0fbfd10db707e79c4f8b97e0b8963f8cd7e697388af0d63209347e4e9266bad1d3a693f4f643d387d54e15f7c5ba4c7f2f93e0cb1380e58f0cef6c7c3674ab07a0bd7e3891eb81ce2b02000cc9226b3363f4b90639589bd6a385137eb7285c27fbbb5e9c677b336c1d8004e5c9ee68a1e82a66187f64fcae2377728e746ff9728c8e975cf6e5ea7fa3ca63766804a5ed841ab22a137164f74e6cf576d2911ea0a4122f420c4bdb866594ece6e57bec0927e9a77dc8ace5013999776b3ad9d8c3f33cd4b8d4a15bbb8c42bafe817da76486ca959173f19033103a1a4ca7091f680a28dd7146c7c6a4823d07d6c768ead7a9b40039a73bcc603adaea12f06a48570914a0d47443b39b28ea4f75c8f3c1b0c3d5b007ad3c92bea37efdafa27dfbfbc98185ebf3a7eeb3e63ff72cfd8857038b815c0bd9d32c20746d34e56ae4f7c68797e5a21dc709853f9eea4173d23'
-  ),
-  cookie.serialize(
-    'ARCJET_OWNER_HASH',
-    'd074f8450fd152169c6406bcc00c5c879c57d92bd3048419d9eaea900fb9f40f'
-  ),
-].join(';')
-
 let thing1: string
 let thing2: string
+let testCookies: string
+let ARCJET_OWNER_HASH: string
 
 test.before(async () => {
+  const generate = await got.get(`http://${host}/generate`)
+  testCookies = (generate.headers['set-cookie'] || []).join(';')
+  ARCJET_OWNER_HASH = cookie.parse(testCookies).ARCJET_OWNER_HASH
+
   const {body: body1} = await got.post(`http://${host}/store/test`, {
     body: 'thing1',
     headers: {
@@ -40,7 +31,7 @@ test.before(async () => {
   thing2 = body2
 })
 
-test('store sets a value and returns expected SHA3', async t => {
+test.serial('store sets a value and returns expected SHA3', async t => {
   const res = await got.post(`http://${host}/store/test`, {
     body: 'thing',
     headers: {
@@ -50,7 +41,7 @@ test('store sets a value and returns expected SHA3', async t => {
 
   t.is(res.body.length, 64)
 
-  const record = await got.get(`http://localhost:3000/store/${res.body}`)
+  const record = await got.get(`http://${host}/store/${res.body}`)
 
   t.is(
     parseRecord(record.body).dataHash,
@@ -59,11 +50,17 @@ test('store sets a value and returns expected SHA3', async t => {
 })
 
 test('store gets first fixture value by SHA3', async t => {
-  const res = await got.get(`http://localhost:3000/store/${thing1}`)
+  const res = await got.get(`http://${host}/store/${thing1}`)
   t.is(parseRecord(res.body).data, 'thing1')
 })
 
 test('store gets last fixture value by SHA3', async t => {
-  const res = await got.get(`http://localhost:3000/store/${thing2}`)
+  const res = await got.get(`http://${host}/store/${thing2}`)
   t.is(parseRecord(res.body).data, 'thing2')
+})
+
+test.serial('store finds records by tag', async t => {
+  const res = await got.get(`http://${host}/find/${ARCJET_OWNER_HASH}/test`)
+  const records = JSON.parse(res.body)
+  t.is(records.length >= 2, true)
 })

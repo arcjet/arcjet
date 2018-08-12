@@ -12,8 +12,10 @@ import {
   ArcjetCookies,
   HashInt,
   HashHash,
+  ArcjetRecord,
 } from './types'
-import {open, close, appendFile, arrToHex} from './utils'
+import {open, close, read, appendFile, arrToHex} from './utils'
+import {parseRecord} from './parser'
 
 class Store {
   private positions: HashInt = {}
@@ -134,8 +136,11 @@ class Store {
   }
 
   public async get(hash: Hash): Promise<Result> {
-    assert.ok(typeof hash === 'string')
-    assert.ok(hash.length === this.shaLength)
+    assert.ok(typeof hash === 'string', 'record hash must be a string')
+    assert.ok(
+      hash.length === this.shaLength,
+      'record hash must be 64 characters in length'
+    )
 
     const position = this.positions[hash]
     const length = this.lengths[hash]
@@ -158,6 +163,48 @@ class Store {
       hash,
       data: stream,
     }
+  }
+
+  public async findByTag(
+    ownerHash: Hash,
+    tag: string,
+    limit: number = 0,
+    offset: number = 0
+  ): Promise<ArcjetRecord[]> {
+    assert.ok(typeof ownerHash === 'string', 'owner hash must be a string')
+    assert.ok(
+      ownerHash.length === this.shaLength,
+      'owner hash must be 64 characters in length'
+    )
+    assert.ok(typeof tag === 'string', 'tag must be a string')
+    assert.ok(tag.length <= 32, 'tag must be 32 characters in length or less')
+
+    let hash = this.owners[ownerHash]
+    let position = this.positions[hash]
+    let length = this.lengths[hash]
+
+    const fd = await this.open(this.path)
+
+    const results: ArcjetRecord[] = []
+
+    while (hash !== '0'.repeat(64)) {
+      console.log(hash)
+      let recordBuffer = Buffer.alloc(length, 'utf8')
+      const {buffer} = await read(fd, recordBuffer, 0, length, position)
+      const recordString = buffer.toString('utf8')
+      const record = parseRecord(recordString)
+      hash = record.parentHash
+      position = this.positions[hash]
+      length = this.lengths[hash]
+
+      if (tag === record.tag) {
+        results.push(record)
+      }
+    }
+
+    await this.close(fd)
+
+    return results
   }
 }
 

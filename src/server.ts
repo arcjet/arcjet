@@ -143,6 +143,17 @@ export const server = (store: Store, port: number) =>
       }
     })
 
+    app.get('/find/:owner/:tag', async (req, res) => {
+      try {
+        const {owner, tag} = req.params
+        const records = await store.findByTag(owner, tag)
+        res.status(200).json(records)
+      } catch (err) {
+        console.error(err)
+        res.sendStatus(500)
+      }
+    })
+
     app.listen(port, () => {
       resolve()
     })

@@ -30,3 +30,15 @@ export interface ArcjetCookies {
 export type FalsyString = string | false
 export type HashInt = {[hash: string]: number}
 export type HashHash = {[hash: string]: Hash}
+
+export interface ArcjetRecord {
+  recordHash: string
+  ownerHash: string
+  parentHash: string
+  dataHash: string
+  encoding: string
+  type: string
+  tag: string
+  signature: string
+  data: string
+}

@@ -1,6 +1,6 @@
 # Arcjet Network Server & Client Library
 
-[![NpmVersion](https://img.shields.io/npm/v/npm.svg)](arcjet/arcjet)
+[![npm version](https://badge.fury.io/js/arcjet.svg)](https://badge.fury.io/js/arcjet)
 
 Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
 
@@ -90,15 +90,19 @@ const line = [recordHash, record].join('\t') + '\n'
 
 ## Find Records
 
-Not Yet Implemented
+Arcjet finds records by keeping track of the most recent hash an record owner has contributed. This is then used to work backwards through all records that match the tag they've specified.
+
+Tag indexes will be added soon.
 
 ### Find by Owner & Tag
 
-`/find/{64-character ownerHash}/{tag}/{limit}/{skip}`
+`/find/{64-character ownerHash}/{<=32-character tag}/{limit}/{skip}`
+
+(limit and skip are optional; omit them if you want all records)
 
 ### Find by Data Hash
 
-`/find/{128-character dataHash}`
+`/find/{64-character ownerHash}/{128-character dataHash}`
 
 ## Roadmap
 
