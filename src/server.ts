@@ -179,6 +179,28 @@ export const server = (store: Store, port: number) =>
       }
     })
 
+    app.get('/find/:owner/:tag/:limit', async (req, res) => {
+      try {
+        const {owner, tag, limit} = req.params
+        const records = await store.findByTag(owner, tag, limit)
+        res.status(200).json(records)
+      } catch (err) {
+        console.error(err)
+        res.sendStatus(500)
+      }
+    })
+
+    app.get('/find/:owner/:tag/:limit/:offset', async (req, res) => {
+      try {
+        const {owner, tag, limit, offset} = req.params
+        const records = await store.findByTag(owner, tag, limit, offset)
+        res.status(200).json(records)
+      } catch (err) {
+        console.error(err)
+        res.sendStatus(500)
+      }
+    })
+
     app.get('/owner', async (req, res) => {
       res.status(200).send(req.cookies.ARCJET_OWNER_HASH)
     })

@@ -187,7 +187,12 @@ class Store {
 
     const results: ArcjetRecord[] = []
 
-    while (hash !== '0'.repeat(64)) {
+    let currentLimit = 0
+    let currentOffset = 0
+
+    let go = true
+
+    while (hash !== '0'.repeat(64) && go) {
       let recordBuffer = Buffer.alloc(length, 'utf8')
       const {buffer} = await read(fd, recordBuffer, 0, length, position)
       const recordString = buffer.toString('utf8')
@@ -197,7 +202,17 @@ class Store {
       length = this.lengths[hash] - 1
 
       if (tag === record.tag) {
-        results.push(record)
+        currentOffset++
+        if (offset === 0 || currentOffset > offset) {
+          if (limit === 0 || currentLimit <= limit) {
+            results.push(record)
+            currentLimit++
+          }
+        }
+      }
+
+      if (limit !== 0 && currentLimit >= limit) {
+        go = false
       }
     }
 
