@@ -3,7 +3,7 @@ import * as got from 'got'
 import * as cookie from 'cookie'
 import {parseRecord} from './parser'
 
-const host = 'localhost:3000'
+const host = '127.0.0.1:3000'
 
 let thing1: string
 let thing2: string

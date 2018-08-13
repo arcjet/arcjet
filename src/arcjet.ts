@@ -34,7 +34,7 @@ program
   .action(async (args, options, logger) => {
     try {
       const request = got.stream(
-        `http://localhost:${options.port || DEFAULT_PORT}/`,
+        `http://127.0.0.1:${options.port || DEFAULT_PORT}/`,
         {
           method: 'POST',
           encoding: 'utf8',

@@ -12,9 +12,9 @@ import {
   ArcjetCookies,
   HashInt,
   HashHash,
-  ArcjetRecord,
 } from './types'
 import {open, close, read, appendFile, arrToHex} from './utils'
+import {hexToBytes} from './client_utils'
 import {parseRecord} from './parser'
 
 class Store {
@@ -97,11 +97,14 @@ class Store {
     const dataHash = sha3_512(data)
 
     const signature = arrToHex(
-      await sphincs.sign(dataHash, auth.ARCJET_PRIVATE_KEY)
+      await sphincs.sign(
+        hexToBytes(dataHash),
+        hexToBytes(auth.ARCJET_PRIVATE_KEY)
+      )
     )
 
     assert.ok(
-      signature.length === 82256,
+      signature.length === 82128,
       'SPHINCS cryptographic signature must be 82k in length'
     )
 
@@ -170,7 +173,7 @@ class Store {
     tag: string,
     limit: number = 0,
     offset: number = 0
-  ): Promise<ArcjetRecord[]> {
+  ): Promise<string> {
     assert.ok(typeof ownerHash === 'string', 'owner hash must be a string')
     assert.ok(
       ownerHash.length === this.shaLength,
@@ -185,7 +188,7 @@ class Store {
 
     const fd = await this.open(this.path)
 
-    const results: ArcjetRecord[] = []
+    const results: string[] = []
 
     let currentLimit = 0
     let currentOffset = 0
@@ -205,7 +208,7 @@ class Store {
         currentOffset++
         if (offset === 0 || currentOffset > offset) {
           if (limit === 0 || currentLimit <= limit) {
-            results.push(record)
+            results.push(recordString)
             currentLimit++
           }
         }
@@ -218,7 +221,7 @@ class Store {
 
     await this.close(fd)
 
-    return results
+    return results.join('\n')
   }
 }
 
