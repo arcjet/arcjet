@@ -2,19 +2,9 @@ import * as fs from 'fs'
 import * as readline from 'readline'
 import {strict as assert} from 'assert'
 import {sha3_256, sha3_512} from 'js-sha3'
-const sphincs = require('sphincs')
 
-import {
-  Path,
-  Hash,
-  Data,
-  Result,
-  ArcjetCookies,
-  HashInt,
-  HashHash,
-} from './types'
-import {open, close, read, appendFile, arrToHex} from './utils'
-import {hexToBytes} from './client_utils'
+import {Path, Hash, HashInt, HashHash} from './types'
+import {open, close, read, appendFile} from './utils'
 import {parseRecord} from './parser'
 
 class Store {
@@ -24,7 +14,6 @@ class Store {
   private path: Path
   private dblen: number = 0
   private shaLength = 64
-  private defaultOwnerHash = '0'.repeat(this.shaLength)
 
   public open = async (path: Path = this.path): Promise<number> =>
     await open(path, 'a+')
@@ -64,20 +53,25 @@ class Store {
       }
     })
 
-  public async set(
-    data: Data,
-    auth: ArcjetCookies,
-    encoding = 'utf8',
-    type = 'text/plain',
-    tag = ''
-  ): Promise<Hash> {
+  public async set(record: string): Promise<Hash> {
+    const {
+      recordHash,
+      ownerHash,
+      parentHash,
+      dataHash,
+      encoding,
+      type,
+      tag,
+      signature,
+      data,
+    } = parseRecord(record)
     assert.ok(typeof data === 'string', 'Data must be of type string for now')
     assert.ok(data.length > 0, 'Data must not be empty')
     assert.ok(data.length <= 1_000_000_000, 'Data must not be larger than 1GB')
     assert.ok(data.includes('\t') === false, 'Data must encode all tabs')
     assert.ok(data.includes('\n') === false, 'Data must encode all newlines')
     assert.ok(
-      auth.ARCJET_OWNER_HASH.length === this.shaLength,
+      ownerHash.length === this.shaLength,
       'Supplied Owner Hash invalid'
     )
     assert.ok(
@@ -93,25 +87,9 @@ class Store {
       'Tag length must be less than or equal to 32 characters'
     )
     assert.ok(tag.length > 0, 'Tag must be provided')
+    assert.ok(sha3_512(data) === dataHash, 'dataHash must be valid')
 
-    const dataHash = sha3_512(data)
-
-    const signature = arrToHex(
-      await sphincs.sign(
-        hexToBytes(dataHash),
-        hexToBytes(auth.ARCJET_PRIVATE_KEY)
-      )
-    )
-
-    assert.ok(
-      signature.length === 82128,
-      'SPHINCS cryptographic signature must be 82k in length'
-    )
-
-    const ownerHash = auth.ARCJET_OWNER_HASH
-    const parentHash = this.owners[ownerHash] || this.defaultOwnerHash
-
-    const record = [
+    const verifiedRecord = [
       ownerHash, // 64
       parentHash, // 64
       dataHash, // 128
@@ -122,13 +100,16 @@ class Store {
       data, // <1000000000 (1GB)
     ].join('\t')
 
-    const recordHash = sha3_256(record)
+    const verifiedRecordHash = sha3_256(verifiedRecord)
 
-    if (this.lengths[recordHash] && this.lengths[recordHash] > 0) {
-      return recordHash
+    if (
+      this.lengths[verifiedRecordHash] &&
+      this.lengths[verifiedRecordHash] > 0
+    ) {
+      return verifiedRecordHash
     }
 
-    const recordString = [recordHash, record].join('\t') + '\n'
+    const recordString = [verifiedRecordHash, verifiedRecord].join('\t') + '\n'
 
     this.update(recordHash, recordString.length, ownerHash)
 
@@ -138,7 +119,7 @@ class Store {
     return recordHash
   }
 
-  public async get(hash: Hash): Promise<Result> {
+  public async get(hash: Hash): Promise<string> {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
@@ -149,11 +130,28 @@ class Store {
     const length = this.lengths[hash]
 
     if (!position && !length) {
-      return {
-        hash,
-        data: undefined,
-        error: 'NOTFOUND',
-      }
+      throw 'Record Not Found'
+    }
+
+    let recordBuffer = Buffer.alloc(length, 'utf8')
+    const fd = await this.open(this.path)
+    const {buffer} = await read(fd, recordBuffer, 0, length, position)
+    const recordString = buffer.toString('utf8')
+    return recordString
+  }
+
+  public async getStream(hash: Hash): Promise<fs.ReadStream> {
+    assert.ok(typeof hash === 'string', 'record hash must be a string')
+    assert.ok(
+      hash.length === this.shaLength,
+      'record hash must be 64 characters in length'
+    )
+
+    const position = this.positions[hash]
+    const length = this.lengths[hash]
+
+    if (!position && !length) {
+      throw 'Record Not Found'
     }
 
     const stream = fs.createReadStream(this.path, {
@@ -162,10 +160,7 @@ class Store {
       end: position + length - 2,
     })
 
-    return {
-      hash,
-      data: stream,
-    }
+    return stream
   }
 
   public async findByTag(
@@ -222,6 +217,10 @@ class Store {
     await this.close(fd)
 
     return results.join('\n')
+  }
+
+  getCurrentParent(owner: Hash) {
+    return this.owners[owner]
   }
 }
 

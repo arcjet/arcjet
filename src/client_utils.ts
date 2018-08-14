@@ -10,3 +10,6 @@ export const hexToBytes = (hex: string): Uint8Array => {
 
   return byteArray
 }
+
+export const bytesToHex = (arr: number[]): string =>
+  arr.map((i: number): string => '0' + i.toString(16).slice(-2)).join('')

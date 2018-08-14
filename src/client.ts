@@ -1,24 +1,83 @@
 import {sha3_256, sha3_512} from 'js-sha3'
 import axios from 'axios'
 const sphincs = require('sphincs')
+import * as QRCode from 'qrcode'
 
 import {parseRecord} from './parser'
-import {hexToBytes} from './client_utils'
-import {HashHash} from './types'
+import {hexToBytes, bytesToHex} from './client_utils'
+import {HashHash, SphincsKeys, ArcjetStorageKeys, ArcjetStorage} from './types'
 
 export default class Arcjet {
-  host: string
+  public host: string
 
-  owners: HashHash = {}
+  private owners: HashHash = {}
+  private shaLength = 64
+  private defaultOwnerHash = '0'.repeat(this.shaLength)
 
   constructor(host: string = 'http://127.0.0.1:3000') {
     this.host = host
   }
 
+  private async getCurrentParentHash(owner: string): Promise<string> {
+    const {data} = await axios.get(`${this.host}/parent/${owner}`)
+    return data
+  }
+
+  private download(data: string) {
+    var link = document.createElement('a')
+    link.download = 'filename.png'
+    link.href = data
+    link.click()
+  }
+
+  private async save(keys: any) {
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY, keys.publicKey)
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_PRIVATE_KEY, keys.privateKey)
+    localStorage.setItem(
+      ArcjetStorageKeys.ARCJET_OWNER_HASH,
+      this.defaultOwnerHash
+    )
+    const ownerHash = await this.set(keys.publicKey, 'owner')
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, ownerHash)
+  }
+
+  private load(): ArcjetStorage {
+    const ARCJET_OWNER_HASH = localStorage.getItem(
+      ArcjetStorageKeys.ARCJET_OWNER_HASH
+    )
+    const ARCJET_PUBLIC_KEY = localStorage.getItem(
+      ArcjetStorageKeys.ARCJET_PUBLIC_KEY
+    )
+    const ARCJET_PRIVATE_KEY = localStorage.getItem(
+      ArcjetStorageKeys.ARCJET_PRIVATE_KEY
+    )
+
+    if (ARCJET_OWNER_HASH && ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
+      return {
+        ARCJET_OWNER_HASH,
+        ARCJET_PUBLIC_KEY,
+        ARCJET_PRIVATE_KEY,
+      }
+    } else {
+      throw 'No Auth Data'
+    }
+  }
+
+  public owner() {
+    return localStorage.getItem(ArcjetStorageKeys.ARCJET_OWNER_HASH)
+  }
+
   public async generate() {
-    return await axios.post(`${this.host}/generate`, null, {
-      withCredentials: true,
-    })
+    try {
+      const keys: SphincsKeys = await sphincs.keyPair()
+      const privateKey = bytesToHex(keys.privateKey)
+      const publicKey = bytesToHex(keys.publicKey)
+      const qr = await QRCode.toDataURL(privateKey)
+      if (document) this.download(qr)
+      if (localStorage) await this.save({privateKey, publicKey})
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   public validate = async (record: string): Promise<string> => {
@@ -78,15 +137,42 @@ export default class Arcjet {
     return '404'
   }
 
-  public async set(data: string, tag: string) {
-    const res = await axios.post(`${this.host}/store/${tag}`, data, {
-      withCredentials: true,
-    })
-    return await res.data
-  }
+  public async set(
+    data: string,
+    tag: string,
+    encoding = 'utf-8',
+    type = 'text/plain'
+  ) {
+    const {
+      ARCJET_OWNER_HASH: ownerHash,
+      ARCJET_PRIVATE_KEY: privateKey,
+    } = this.load()
+    const dataHash = sha3_512(data)
 
-  public async owner() {
-    const res = await axios.get(`${this.host}/owner`, {withCredentials: true})
+    let parentHash
+    if (ownerHash === this.defaultOwnerHash) {
+      parentHash = this.defaultOwnerHash
+    } else {
+      parentHash = await this.getCurrentParentHash(ownerHash)
+    }
+
+    const signature = await sphincs.sign(dataHash, privateKey)
+
+    const record = [
+      ownerHash, // 64
+      parentHash, // 64, for CAS
+      dataHash, // 128
+      encoding.padEnd(32, ' '), // 32
+      type.padEnd(32, ' '), // 32
+      tag.padEnd(32, ' '), // 32
+      signature, // 82256
+      data, // <1000000000 (1GB)
+    ].join('\t')
+
+    const recordHash = sha3_256(record)
+    const recordString = [recordHash, record].join('\t')
+
+    const res = await axios.post(`${this.host}/store`, recordString)
     return await res.data
   }
 
@@ -104,7 +190,6 @@ export default class Arcjet {
       const response = await res.data
       const records = response.split('\n')
       const results = await Promise.all(records.map(this.validate))
-      console.log('results', results)
       return results as any
     }
     return ['404']

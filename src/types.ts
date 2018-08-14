@@ -21,11 +21,17 @@ export interface Key {
   hash: Hash
 }
 
-export interface ArcjetCookies {
+export interface ArcjetStorage {
   ARCJET_PRIVATE_KEY: string
   ARCJET_PUBLIC_KEY: string
   ARCJET_OWNER_HASH: string
 }
+export enum ArcjetStorageKeys {
+  ARCJET_OWNER_HASH = 'ARCJET_OWNER_HASH',
+  ARCJET_PUBLIC_KEY = 'ARCJET_PUBLIC_KEY',
+  ARCJET_PRIVATE_KEY = 'ARCJET_PRIVATE_KEY',
+}
+export type FalsyArcjetStorage = ArcjetStorage | undefined
 
 export type FalsyString = string | false
 export type HashInt = {[hash: string]: number}
@@ -41,4 +47,9 @@ export interface ArcjetRecord {
   tag: string
   signature: string
   data: string
+}
+
+export interface SphincsKeys {
+  publicKey: number[]
+  privateKey: number[]
 }
