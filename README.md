@@ -1,6 +1,7 @@
 # Arcjet Network Server & Client Library
 
 [![npm version](https://badge.fury.io/js/arcjet.svg)](https://badge.fury.io/js/arcjet)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farcjet%2Farcjet.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Farcjet%2Farcjet?ref=badge_shield)
 
 Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
 
@@ -112,3 +113,7 @@ Tag indexes will be added soon.
 - Fixed to UTF-8 encoding for now. Add encodings and mimetypes.
 - More event-driven / stream features
 - Image resizing
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farcjet%2Farcjet.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Farcjet%2Farcjet?ref=badge_large)
