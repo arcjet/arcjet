@@ -5,9 +5,6 @@
 
 Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
 
-There is a security flaw in the current code. Do not use this database until the following issue is solved:
-https://github.com/arcjet/arcjet/issues/20
-
 ## Background
 
 Most every current system has points of centralization. Even decentralized systems need interfaces to commonly centralized networks. These centralized networks are massive single points of failure. Failure of these systems would often result in widespread network outages and would be front-page news. This process of centralization would also result in the accumulation of wealth by centralized server operators to a degree that our civilization has never seen before.
