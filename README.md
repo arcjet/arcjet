@@ -23,6 +23,8 @@ It's important to note that, currently the Arcjet Network runs behind a Gateway 
 
 \* A hash table is a means of storing and retrieving a data record by the hash of its data. A hash is a very large number that is a representation of that data produced by an algorithm that processes the data itself, that can consistently provide the same number given the same data, and a different number with different data. The result of a cryptographic hash cannot be predicted beforehand; it must be run over the data to retrieve it.
 
+A distributed hash table will associate a desired hash with a peer ID, so it knows who to ask for that data, allowing it to be spread amongst many different peers.
+
 ## Goals
 
 1. Provide a database that can be operated by anyone while DApp Owners can still trust the integrity of their data.
