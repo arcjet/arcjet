@@ -18,9 +18,7 @@ Previous implementations of Distributed Hash Table\*, or DHT-based object stores
 
 After working with a few DHT-based networks, such as IPFS and Swarm, it was determined that current efforts are under-serving DApp developers, and a new approach might be warranted.
 
-Arcjet is a DHT network written to incentivize operators to grow their systems as demand grows and as data gets stored long-term. Contracts are also meant to always be cheaper than traditional cloud storage operators. It is developed to provide the state-of-the-art in security (SHA-3 for hashes and SPHINCS, a post-quantum crypto algorithm, for proving record ownership), while also providing decent performance to users.
-
-Every transaction will have about 80 kilobytes of overhead, primarily to SPHINCS quantum-resistant signatures. The assumption is that this is a necessary tradeoff for security. It might be possible to provide records without the signature, but then proving ownership would be difficult, and could result in distrust in a more distributed adversarial network.
+Arcjet is a DHT network written to incentivize operators to grow their systems as demand grows and as data gets stored long-term. Contracts are also meant to always be cheaper than traditional cloud storage operators.
 
 The Arcjet Client runs the same algorithms used by the servers, compiled to WebAssembly thanks to developers on the Cyph project, and verifies all data it receives for veracity and integrity.
 
@@ -60,8 +58,6 @@ The Arcjet network means to solve a few problems in adversarial networks. Howeve
 - Browser and Server
   - Browser & Server both verify SHA and MAC
 - Event-Driven (Streaming)
-- SHA3 512-bit data hashes and 256-bit record hashes
-- SPHINCS Post-Quantum Cryptography for keys and signatures (using WebAssembly)
 
 ## Protocol
 
@@ -114,6 +110,6 @@ Tag indexes will be added soon.
 - More event-driven / stream features
 - Image resizing
 
-
 ## License
+
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farcjet%2Farcjet.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Farcjet%2Farcjet?ref=badge_large)

@@ -1,11 +1,17 @@
 import * as fs from 'fs'
 import * as readline from 'readline'
 import {strict as assert} from 'assert'
-import {sha3_256, sha3_512} from 'js-sha3'
+import * as nacl from 'tweetnacl'
 
 import {Path, Hash, HashInt, HashHash} from './types'
 import {open, close, read, appendFile} from './utils'
+import {hexToBytes, bytesToHex} from './client_utils'
 import {parseRecord} from './parser'
+
+const hashAsByteArray = (data: string): Uint8Array =>
+  nacl.hash(hexToBytes(data))
+
+const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 
 class Store {
   private positions: HashInt = {}
@@ -13,7 +19,8 @@ class Store {
   private owners: HashHash = {}
   private path: Path
   private dblen: number = 0
-  private shaLength = 64
+  public shaLength = 128
+  public emptyHash: string
 
   public open = async (path: Path = this.path): Promise<number> =>
     await open(path, 'a+')
@@ -22,13 +29,14 @@ class Store {
   private update(hash: Hash, length: number, ownerHash: Hash) {
     this.positions[hash] = this.dblen
     this.lengths[hash] = length
-    this.owners[ownerHash] = hash
+    this.owners[ownerHash === this.emptyHash ? hash : ownerHash] = hash
     this.dblen = this.dblen + length
     console.log('hash', hash, 'ownerHash', ownerHash, 'length', length)
   }
 
   public init = (path: Path) =>
     new Promise(async (resolve, reject) => {
+      this.emptyHash = '0'.repeat(this.shaLength)
       try {
         this.path = path
         const instream = fs.createReadStream(path, 'utf8')
@@ -87,11 +95,15 @@ class Store {
       'Tag length must be less than or equal to 32 characters'
     )
     assert.ok(tag.length > 0, 'Tag must be provided')
-    assert.ok(sha3_512(data) === dataHash, 'dataHash must be valid')
+    assert.ok(hashAsString(data) === dataHash, 'dataHash must be valid')
+    assert.ok(
+      parentHash === this.getCurrentParent(ownerHash),
+      'parentHash CAS error'
+    )
 
     const verifiedRecord = [
-      ownerHash, // 64
-      parentHash, // 64
+      ownerHash, // 128
+      parentHash, // 128
       dataHash, // 128
       encoding.padEnd(32, ' '), // 32
       type.padEnd(32, ' '), // 32
@@ -100,7 +112,7 @@ class Store {
       data, // <1000000000 (1GB)
     ].join('\t')
 
-    const verifiedRecordHash = sha3_256(verifiedRecord)
+    const verifiedRecordHash = hashAsString(verifiedRecord)
 
     if (
       this.lengths[verifiedRecordHash] &&
@@ -123,7 +135,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 64 characters in length'
+      'record hash must be 128 characters in length'
     )
 
     const position = this.positions[hash]
@@ -144,7 +156,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 64 characters in length'
+      'record hash must be 128 characters in length'
     )
 
     const position = this.positions[hash]
@@ -172,7 +184,7 @@ class Store {
     assert.ok(typeof ownerHash === 'string', 'owner hash must be a string')
     assert.ok(
       ownerHash.length === this.shaLength,
-      'owner hash must be 64 characters in length'
+      'owner hash must be 128 characters in length'
     )
     assert.ok(typeof tag === 'string', 'tag must be a string')
     assert.ok(tag.length <= 32, 'tag must be 32 characters in length or less')
@@ -190,7 +202,7 @@ class Store {
 
     let go = true
 
-    while (hash !== '0'.repeat(64) && go) {
+    while (hash !== this.emptyHash && go) {
       let recordBuffer = Buffer.alloc(length, 'utf8')
       const {buffer} = await read(fd, recordBuffer, 0, length, position)
       const recordString = buffer.toString('utf8')
@@ -219,8 +231,8 @@ class Store {
     return results.join('\n')
   }
 
-  getCurrentParent(owner: Hash) {
-    return this.owners[owner]
+  getCurrentParent(ownerHash: Hash) {
+    return this.owners[ownerHash] || this.emptyHash
   }
 }
 

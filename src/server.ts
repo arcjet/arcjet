@@ -1,6 +1,7 @@
 import * as express from 'express'
 import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
+import {strict as assert} from 'assert'
 
 import Store from './store'
 // import {homepage} from './html'
@@ -27,7 +28,8 @@ export const server = (store: Store, port: number) =>
     })
 
     app.get('/store/:hash', async (req, res) => {
-      if (req.params.hash.length !== 64) {
+      if (req.params.hash.length !== store.shaLength) {
+        res.sendStatus(400)
         return
       }
       try {
@@ -117,7 +119,11 @@ export const server = (store: Store, port: number) =>
 
     app.get('/parent/:ownerHash', (req, res) => {
       try {
-        const parentHash = store.getCurrentParent(req.body)
+        assert.ok(
+          req.params.ownerHash.length === store.shaLength,
+          'Request should have sent a 512-bit hash'
+        )
+        const parentHash = store.getCurrentParent(req.params.ownerHash)
         res.status(200).send(parentHash)
       } catch (err) {
         res.status(500).send(err)

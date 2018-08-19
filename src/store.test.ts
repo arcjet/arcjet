@@ -1,6 +1,5 @@
 import test from 'ava'
 import * as got from 'got'
-import * as cookie from 'cookie'
 import {parseRecord} from './parser'
 
 const host = '127.0.0.1:3000'
@@ -13,7 +12,7 @@ let ARCJET_OWNER_HASH: string
 test.before(async () => {
   const generate = await got.get(`http://${host}/generate`)
   testCookies = (generate.headers['set-cookie'] || []).join(';')
-  ARCJET_OWNER_HASH = cookie.parse(testCookies).ARCJET_OWNER_HASH
+  ARCJET_OWNER_HASH = ''
 
   const {body: body1} = await got.post(`http://${host}/store/test`, {
     body: 'thing1',

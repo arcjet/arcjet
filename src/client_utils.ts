@@ -1,15 +1,19 @@
-export const hexToBytes = (hex: string): Uint8Array => {
-  console.log(hex.length / 2)
-  const byteArray = new Uint8Array(hex.length / 2)
+export const assert = (assertion: boolean, message: string): void => {
+  if (assertion === false) throw new Error(`Assertion Error: ${message}`)
+}
 
+export const hexToBytes = (hex: string): Uint8Array => {
+  const byteArray = new Uint8Array(hex.length / 2)
   for (let c = 0, h = 0; c < hex.length; c += 2, h++) {
     byteArray[h] = parseInt(hex.substr(c, 2), 16)
   }
-
-  console.log(byteArray)
-
   return byteArray
 }
 
-export const bytesToHex = (arr: number[]): string =>
-  arr.map((i: number): string => '0' + i.toString(16).slice(-2)).join('')
+export const bytesToHex = (arr: Uint8Array): string => {
+  const hex: string[] = []
+  for (let c = 0; c < arr.length; c++) {
+    hex.push(arr[c].toString(16).padStart(2, '0'))
+  }
+  return hex.join('')
+}

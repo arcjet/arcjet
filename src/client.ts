@@ -1,25 +1,30 @@
-import {sha3_256, sha3_512} from 'js-sha3'
-import axios from 'axios'
-const sphincs = require('sphincs')
+import * as nacl from 'tweetnacl'
 import * as QRCode from 'qrcode'
 
 import {parseRecord} from './parser'
-import {hexToBytes, bytesToHex} from './client_utils'
-import {HashHash, SphincsKeys, ArcjetStorageKeys, ArcjetStorage} from './types'
+import {assert, hexToBytes, bytesToHex} from './client_utils'
+import {HashHash, ArcjetStorageKeys, ArcjetStorage} from './types'
+
+const hashAsByteArray = (data: string): Uint8Array =>
+  nacl.hash(hexToBytes(data))
+
+const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 
 export default class Arcjet {
   public host: string
 
   private owners: HashHash = {}
-  private shaLength = 64
-  private defaultOwnerHash = '0'.repeat(this.shaLength)
+  private shaLength = 128
+  private defaultOwnerHash: string
 
   constructor(host: string = 'http://127.0.0.1:3000') {
+    this.defaultOwnerHash = '0'.repeat(this.shaLength)
     this.host = host
   }
 
   private async getCurrentParentHash(owner: string): Promise<string> {
-    const {data} = await axios.get(`${this.host}/parent/${owner}`)
+    const req = await fetch(`${this.host}/parent/${owner}`)
+    const data = await req.text()
     return data
   }
 
@@ -69,8 +74,8 @@ export default class Arcjet {
 
   public async generate() {
     try {
-      const keys: SphincsKeys = await sphincs.keyPair()
-      const privateKey = bytesToHex(keys.privateKey)
+      const keys = nacl.sign.keyPair()
+      const privateKey = bytesToHex(keys.secretKey)
       const publicKey = bytesToHex(keys.publicKey)
       const qr = await QRCode.toDataURL(privateKey)
       if (document) this.download(qr)
@@ -87,24 +92,29 @@ export default class Arcjet {
     let ownerPublicKey = this.owners[ownerHash]
 
     if (!ownerPublicKey) {
-      const {data} = await axios.get(`${this.host}/store/${ownerHash}`)
-      ownerPublicKey = parseRecord(data).data
-      console.log('ownerPublicKey', ownerPublicKey)
+      const req = await fetch(`${this.host}/store/${ownerHash}`)
+      const data = await req.text()
+      ownerPublicKey = parseRecord(data).data // TODO validate this record too
     }
 
-    const recDataHash = sha3_512(data)
-    const recRecordHash = sha3_256(record.substr(65))
-    const verified = await sphincs.open(
+    const recDataHash = hashAsString(data)
+    const recRecordHash = hashAsString(record.substr(this.shaLength + 1))
+
+    const verified = nacl.sign.detached.verify(
+      hexToBytes(recDataHash),
       hexToBytes(signature),
       hexToBytes(ownerPublicKey)
     )
 
-    if (
-      verified &&
-      verified.length === 64 &&
-      recDataHash === dataHash &&
-      recRecordHash === recordHash
-    ) {
+    console.log(
+      verified,
+      recDataHash === dataHash,
+      recRecordHash === recordHash,
+      recRecordHash,
+      recordHash
+    )
+
+    if (verified && recDataHash === dataHash && recRecordHash === recordHash) {
       return data
     } else {
       return '400'
@@ -112,28 +122,11 @@ export default class Arcjet {
   }
 
   public async get(hash: string): Promise<string> {
-    const chunks = []
-    const res = await axios.get(`${this.host}/store/${hash}`)
-
-    if (res.status === 200 && res.data) {
-      const reader = res.data.getReader()
-      const decoder = new TextDecoder()
-      let done = false
-
-      while (!done) {
-        const result = await reader.read()
-        const chunk = decoder.decode(result.value || new Uint8Array(), {
-          stream: !result.done,
-        })
-        chunks.push(chunk)
-        done = result.done
-      }
-
-      const record = chunks.join('')
-
+    const res = await fetch(`${this.host}/store/${hash}`)
+    if (res.status === 200) {
+      const record = await res.text()
       return await this.validate(record)
     }
-
     return '404'
   }
 
@@ -147,7 +140,7 @@ export default class Arcjet {
       ARCJET_OWNER_HASH: ownerHash,
       ARCJET_PRIVATE_KEY: privateKey,
     } = this.load()
-    const dataHash = sha3_512(data)
+    const dataHashArray = hashAsByteArray(data)
 
     let parentHash
     if (ownerHash === this.defaultOwnerHash) {
@@ -156,24 +149,33 @@ export default class Arcjet {
       parentHash = await this.getCurrentParentHash(ownerHash)
     }
 
-    const signature = await sphincs.sign(dataHash, privateKey)
+    const signature = nacl.sign.detached(dataHashArray, hexToBytes(privateKey))
 
     const record = [
-      ownerHash, // 64
-      parentHash, // 64, for CAS
-      dataHash, // 128
+      ownerHash, // 128
+      parentHash, // 128, for CAS
+      bytesToHex(dataHashArray), // 128
       encoding.padEnd(32, ' '), // 32
       type.padEnd(32, ' '), // 32
       tag.padEnd(32, ' '), // 32
-      signature, // 82256
+      bytesToHex(signature), // 82256
       data, // <1000000000 (1GB)
     ].join('\t')
 
-    const recordHash = sha3_256(record)
+    const recordHash = hashAsString(record)
     const recordString = [recordHash, record].join('\t')
 
-    const res = await axios.post(`${this.host}/store`, recordString)
-    return await res.data
+    const res = await fetch(`${this.host}/store`, {
+      method: 'POST',
+      body: recordString,
+    })
+
+    const recRecordHash = await res.text()
+    assert(
+      recordHash === recRecordHash,
+      'Record hash from server must match computed record hash'
+    )
+    return recordHash
   }
 
   public async findByTag(
@@ -185,9 +187,9 @@ export default class Arcjet {
     const url = [this.host, 'find', ownerHash, tag]
     if (limit) url.push(limit.toString())
     if (limit && offset) url.push(offset.toString())
-    const res = await axios.get(url.join('/'))
+    const res = await fetch(url.join('/'))
     if (res.status === 200) {
-      const response = await res.data
+      const response = await res.text()
       const records = response.split('\n')
       const results = await Promise.all(records.map(this.validate))
       return results as any
