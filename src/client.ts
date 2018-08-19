@@ -94,7 +94,7 @@ export default class Arcjet {
     if (!ownerPublicKey) {
       const req = await fetch(`${this.host}/store/${ownerHash}`)
       const data = await req.text()
-      ownerPublicKey = parseRecord(data).data // TODO validate this record too
+      ownerPublicKey = parseRecord(data).data
     }
 
     const recDataHash = hashAsString(data)
