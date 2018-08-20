@@ -1,9 +1,13 @@
-# Arcjet Network Server & Client Library
+# Arcjet Platform - Distributed Datastore & Client Library
 
 [![npm version](https://badge.fury.io/js/arcjet.svg)](https://badge.fury.io/js/arcjet)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farcjet%2Farcjet.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Farcjet%2Farcjet?ref=badge_shield)
 
 Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
+
+## Disclaimer
+
+This is beta software, the API of which is not yet finalized, nor is the record format. Any code written for this platform will have to be refactored once 1.0 is released, and records migrated. 1.0 is expected to be sometime in early September, 2018.
 
 ## Background
 
