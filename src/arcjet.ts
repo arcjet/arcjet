@@ -15,13 +15,19 @@ program.version(pkg.version)
 program
   .command('start', 'Start server with a database file')
   .argument('<file>', 'File to start the database with')
-  .option('--port <port>', 'Port number to listen on', program.INT, 3000, true)
+  .option(
+    '--port <port>',
+    'Port number to listen on',
+    program.INT,
+    DEFAULT_PORT,
+    true
+  )
   .action(async (args, options, logger) => {
     try {
       const store = new Store()
       await store.init(args.file)
       await server(store, parseInt(options.port, 10) || DEFAULT_PORT)
-      logger.info('Server started')
+      logger.info(`Arcjet started on port ${options.port || DEFAULT_PORT}`)
     } catch (err) {
       logger.error(err)
     }
