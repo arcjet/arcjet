@@ -7,10 +7,10 @@ import Store from './store'
 // import {homepage} from './html'
 
 export const server = (store: Store, port: number) =>
-  new Promise((resolve, reject) => {
+  new Promise(resolve => {
     const app = express()
 
-    var corsOptionsDelegate = function(req: express.Request, cb: any) {
+    const corsOptionsDelegate = function(req: express.Request, cb: any) {
       cb(null, {origin: req.headers.origin, credentials: true})
     }
 

@@ -64,4 +64,6 @@ program
     }
   })
 
+program.command('gateway')
+
 program.parse(process.argv)
