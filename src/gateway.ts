@@ -4,12 +4,23 @@ import * as cors from 'cors'
 import {ExpressPeerServer} from 'peer'
 import * as Peer from 'peerjs'
 import uuidv4 from 'uuid/v4'
+import Store from './store'
 
 export class Gateway {
   private peers = new Map()
   private requests = new Map()
+  private store: Store
 
-  public init = (gatewayPort: number, peerPort: number) =>
+  constructor(store: Store) {
+    this.store = store
+  }
+
+  public init = (
+    gatewayPort: number,
+    peerPort: number,
+    file: string = 'db/index.db',
+    host: string = 'localhost'
+  ) =>
     new Promise(resolve => {
       const app = express()
 
@@ -20,7 +31,7 @@ export class Gateway {
       app.use(cors(corsOptionsDelegate))
 
       const peerserver = ExpressPeerServer({port: peerPort, path: '/peers'})
-      const peer = new Peer({host: 'localhost', port: peerPort, path: '/peers'})
+      const peer = new Peer({host, port: peerPort, path: '/peers'})
 
       peerserver.on('connection', (id: string) => {
         this.peers.set(id, [0, 15])
@@ -28,12 +39,14 @@ export class Gateway {
       })
 
       peerserver.on('disconnect', (id: string) => {
+        this.peers.delete(id)
         console.log('peer disconnected:', id)
       })
 
       app.use('/peers', peerserver)
 
-      app.listen(gatewayPort, () => {
+      app.listen(gatewayPort, async () => {
+        await this.store.init(file)
         resolve()
       })
     })

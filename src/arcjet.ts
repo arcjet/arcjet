@@ -6,14 +6,17 @@ import * as got from 'got'
 
 import Store from './store'
 import {server} from './server'
+import {Gateway} from './gateway'
 const pkg = require('../package.json')
 
-const DEFAULT_PORT = 3000
+export const DEFAULT_PORT = 3000
+export const GATEWAY_PORT = 6000
+export const PEER_PORT = 9000
 
 program.version(pkg.version)
 
 program
-  .command('start', 'Start server with a database file')
+  .command('standalone', 'Start a standalone server with a database file')
   .argument('<file>', 'File to start the database with')
   .option(
     '--port <port>',
@@ -64,6 +67,42 @@ program
     }
   })
 
-program.command('gateway')
+program
+  .command('gateway', 'Start a gateway server')
+  .argument('<file>', 'File to start the database with')
+  .argument('<host>', 'Hostname')
+  .option(
+    '--gateway-port <gateway_port>',
+    'Gateway port number to listen on',
+    program.INT,
+    GATEWAY_PORT,
+    true
+  )
+  .option(
+    '--peer-port <peer_port>',
+    'Peer port number to listen on',
+    program.INT,
+    PEER_PORT,
+    true
+  )
+  .action(async (args, options, logger) => {
+    try {
+      const store = new Store()
+      const gateway = new Gateway(store)
+      await store.init(args.file)
+      await gateway.init(
+        parseInt(options.gateway_port, 10) || GATEWAY_PORT,
+        parseInt(options.peer_port, 10) || PEER_PORT,
+        args.file,
+        args.host
+      )
+      logger.info(
+        `Arcjet started on ports ${options.gateway_port ||
+          GATEWAY_PORT} & ${options.peer_port || PEER_PORT}`
+      )
+    } catch (err) {
+      logger.error(err)
+    }
+  })
 
 program.parse(process.argv)
