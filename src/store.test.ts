@@ -1,6 +1,6 @@
 import test from 'ava'
 import * as got from 'got'
-import {parseRecord} from './parser'
+import {parseRecord} from './format'
 
 const host = '127.0.0.1:3000'
 

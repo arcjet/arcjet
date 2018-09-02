@@ -3,10 +3,11 @@ import * as program from 'caporal'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as got from 'got'
+import * as express from 'express'
 
 import Store from './store'
 import {server} from './server'
-import {Gateway} from './gateway'
+import {gateway} from './gateway'
 const pkg = require('../package.json')
 
 export const DEFAULT_PORT = 3000
@@ -29,8 +30,10 @@ program
     try {
       const store = new Store()
       await store.init(args.file)
-      await server(store, parseInt(options.port, 10) || DEFAULT_PORT)
-      logger.info(`Arcjet started on port ${options.port || DEFAULT_PORT}`)
+      const app = server(express(), store)
+      app.listen(parseInt(options.port, 10) || DEFAULT_PORT, () => {
+        logger.info(`Arcjet started on port ${options.port || DEFAULT_PORT}`)
+      })
     } catch (err) {
       logger.error(err)
     }
@@ -87,13 +90,9 @@ program
   )
   .action(async (args, options, logger) => {
     try {
-      const store = new Store()
-      const gateway = new Gateway(store)
-      await store.init(args.file)
-      await gateway.init(
+      await gateway(
         parseInt(options.gateway_port, 10) || GATEWAY_PORT,
         parseInt(options.peer_port, 10) || PEER_PORT,
-        args.file,
         args.host
       )
       logger.info(

@@ -1,9 +1,9 @@
 import * as nacl from 'tweetnacl'
 import * as QRCode from 'qrcode'
 
-import {parseRecord} from './parser'
+import {parseRecord, formatDataRecord, formatRecord} from './format'
 import {assert, hexToBytes, bytesToHex} from './client_utils'
-import {HashHash, ArcjetStorageKeys, ArcjetStorage} from './types'
+import {HashHash, ArcjetStorageKeys, ArcjetStorage, ISet, IFind} from './types'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -15,17 +15,13 @@ export default class Arcjet {
 
   private owners: HashHash = {}
   private shaLength = 128
-  private defaultOwnerHash: string
+  private emptyHash: string
+  private siteHash: string
 
-  constructor(host: string = 'http://127.0.0.1:3000') {
-    this.defaultOwnerHash = '0'.repeat(this.shaLength)
+  constructor(host: string = 'http://127.0.0.1:3000', siteHash?: string) {
+    this.emptyHash = '0'.repeat(this.shaLength)
     this.host = host
-  }
-
-  private async getCurrentParentHash(owner: string): Promise<string> {
-    const req = await fetch(`${this.host}/parent/${owner}`)
-    const data = await req.text()
-    return data
+    this.siteHash = siteHash || hashAsString(window.location.hostname)
   }
 
   private download(data: string) {
@@ -38,10 +34,7 @@ export default class Arcjet {
   private async save(keys: any) {
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY, keys.publicKey)
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PRIVATE_KEY, keys.privateKey)
-    localStorage.setItem(
-      ArcjetStorageKeys.ARCJET_OWNER_HASH,
-      this.defaultOwnerHash
-    )
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, this.emptyHash)
     const ownerHash = await this.set(keys.publicKey, 'owner')
     localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, ownerHash)
   }
@@ -121,8 +114,8 @@ export default class Arcjet {
     }
   }
 
-  public async get(hash: string): Promise<string> {
-    const res = await fetch(`${this.host}/store/${hash}`)
+  public async get(recordHash: string): Promise<string> {
+    const res = await fetch(`${this.host}/store/${recordHash}`)
     if (res.status === 200) {
       const record = await res.text()
       return await this.validate(record)
@@ -130,44 +123,43 @@ export default class Arcjet {
     return '404'
   }
 
-  public async set(
-    data: string,
-    tag: string,
+  public async set({
+    data,
+    tag,
+    version = '0.0.0',
+    network = 'mainnet',
+    linkHash = this.emptyHash,
+    siteHash = this.siteHash,
     encoding = 'utf-8',
-    type = 'text/plain'
-  ) {
+    type = 'text/plain',
+  }: ISet) {
     const {
       ARCJET_OWNER_HASH: ownerHash,
       ARCJET_PRIVATE_KEY: privateKey,
     } = this.load()
     const dataHashArray = hashAsByteArray(data)
 
-    let parentHash
-    if (ownerHash === this.defaultOwnerHash) {
-      parentHash = this.defaultOwnerHash
-    } else {
-      parentHash = await this.getCurrentParentHash(ownerHash)
-    }
-
     const signature = nacl.sign.detached(dataHashArray, hexToBytes(privateKey))
 
-    const record = [
-      ownerHash, // 128
-      parentHash, // 128, for CAS
-      bytesToHex(dataHashArray), // 128
-      encoding.padEnd(32, ' '), // 32
-      type.padEnd(32, ' '), // 32
-      tag.padEnd(32, ' '), // 32
-      bytesToHex(signature), // 82256
-      data, // <1000000000 (1GB)
-    ].join('\t')
+    const recordString = formatDataRecord({
+      signature: bytesToHex(signature),
+      ownerHash,
+      siteHash,
+      linkHash,
+      dataHash: bytesToHex(dataHashArray),
+      encoding,
+      type,
+      tag,
+      version,
+      network,
+      data,
+    })
 
-    const recordHash = hashAsString(record)
-    const recordString = [recordHash, record].join('\t')
+    const recordHash = hashAsString(recordString)
 
     const res = await fetch(`${this.host}/store`, {
       method: 'POST',
-      body: recordString,
+      body: formatRecord({recordHash, recordString}),
     })
 
     const recRecordHash = await res.text()
@@ -178,12 +170,7 @@ export default class Arcjet {
     return recordHash
   }
 
-  public async findByTag(
-    ownerHash: string,
-    tag: string,
-    limit?: number,
-    offset?: number
-  ): Promise<string[]> {
+  public async find({ownerHash, tag, limit, offset}: IFind): Promise<string[]> {
     const url = [this.host, 'find', ownerHash, tag]
     if (limit) url.push(limit.toString())
     if (limit && offset) url.push(offset.toString())

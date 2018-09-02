@@ -17,3 +17,6 @@ export const bytesToHex = (arr: Uint8Array): string => {
   }
   return hex.join('')
 }
+
+export const getFixedHex = (num: number, length: number) =>
+  num.toString(16).padStart(length, '0')

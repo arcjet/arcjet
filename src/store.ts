@@ -3,10 +3,10 @@ import * as readline from 'readline'
 import {strict as assert} from 'assert'
 import * as nacl from 'tweetnacl'
 
-import {Path, Hash, HashInt, HashHash} from './types'
+import {Path, Hash, HashInt, HashSet, IFind, IUpdate} from './types'
 import {open, close, read, appendFile} from './utils'
 import {hexToBytes, bytesToHex} from './client_utils'
-import {parseRecord} from './parser'
+import {parseRecord, formatDataRecord, formatRecord} from './format'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -16,7 +16,11 @@ const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 class Store {
   private positions: HashInt = {}
   private lengths: HashInt = {}
-  private owners: HashHash = {}
+  private ownerHashes: HashSet = {}
+  private siteHashes: HashSet = {}
+  private linkHashes: HashSet = {}
+  private dataHashes: HashSet = {}
+  private tags: HashSet = {}
   private path: Path
   private dblen: number = 0
   public shaLength = 128
@@ -26,12 +30,32 @@ class Store {
     await open(path, 'a+')
   public close = async (fd: number): Promise<void> => await close(fd)
 
-  private update(hash: Hash, length: number, ownerHash: Hash) {
-    this.positions[hash] = this.dblen
-    this.lengths[hash] = length
-    this.owners[ownerHash === this.emptyHash ? hash : ownerHash] = hash
+  private updateSet(set: HashSet, key: string, value: string) {
+    set[key] ? set[key].add(value) : (set[key] = new Set([value]))
+  }
+
+  private update({
+    recordHash,
+    ownerHash,
+    siteHash,
+    linkHash,
+    dataHash,
+    tag,
+    length,
+  }: IUpdate) {
+    // Data access
+    this.positions[recordHash] = this.dblen
+    this.lengths[recordHash] = length
     this.dblen = this.dblen + length
-    console.log('hash', hash, 'ownerHash', ownerHash, 'length', length)
+
+    // Indexing for find method
+    this.updateSet(this.ownerHashes, ownerHash, recordHash)
+    this.updateSet(this.siteHashes, siteHash, recordHash)
+    this.updateSet(this.linkHashes, linkHash, recordHash)
+    this.updateSet(this.dataHashes, dataHash, recordHash)
+    this.updateSet(this.tags, tag, recordHash)
+
+    console.log('tag', tag, 'recordHash', recordHash, 'length', length)
   }
 
   public init = (path: Path) =>
@@ -43,9 +67,23 @@ class Store {
         const rl = readline.createInterface(instream)
 
         rl.on('line', line => {
-          const hash = line.substr(0, this.shaLength)
-          const ownerHash = line.substr(this.shaLength + 1, this.shaLength)
-          this.update(hash, line.length + 1, ownerHash)
+          const {
+            recordHash,
+            ownerHash,
+            siteHash,
+            linkHash,
+            dataHash,
+            tag,
+          } = parseRecord(line)
+          this.update({
+            recordHash,
+            ownerHash,
+            siteHash,
+            linkHash,
+            dataHash,
+            tag,
+            length: line.length + 1,
+          })
         })
 
         rl.on('close', () => {
@@ -65,11 +103,15 @@ class Store {
     const {
       recordHash,
       ownerHash,
-      parentHash,
+      siteHash,
+      linkHash,
       dataHash,
       encoding,
       type,
       tag,
+      version,
+      network,
+      time,
       signature,
       data,
     } = parseRecord(record)
@@ -78,10 +120,6 @@ class Store {
     assert.ok(data.length <= 1_000_000_000, 'Data must not be larger than 1GB')
     assert.ok(data.includes('\t') === false, 'Data must encode all tabs')
     assert.ok(data.includes('\n') === false, 'Data must encode all newlines')
-    assert.ok(
-      ownerHash.length === this.shaLength,
-      'Supplied Owner Hash invalid'
-    )
     assert.ok(
       encoding.length <= 32,
       'Encoding length must be less than or equal to 32 characters'
@@ -96,34 +134,47 @@ class Store {
     )
     assert.ok(tag.length > 0, 'Tag must be provided')
     assert.ok(hashAsString(data) === dataHash, 'dataHash must be valid')
-    assert.ok(
-      parentHash === this.getCurrentParent(ownerHash),
-      'parentHash CAS error'
-    )
+    // TODO more validations
 
-    const verifiedRecord = [
-      ownerHash, // 128
-      parentHash, // 128
-      dataHash, // 128
-      encoding.padEnd(32, ' '), // 32
-      type.padEnd(32, ' '), // 32
-      tag.padEnd(32, ' '), // 32
-      signature, // 82256
-      data, // <1000000000 (1GB)
-    ].join('\t')
+    const dataRecordString = formatDataRecord({
+      signature,
+      ownerHash,
+      siteHash,
+      linkHash,
+      dataHash,
+      encoding,
+      type,
+      tag,
+      version,
+      network,
+      time,
+      data,
+    })
 
-    const verifiedRecordHash = hashAsString(verifiedRecord)
+    const validatedRecordHash = hashAsString(dataRecordString)
 
     if (
-      this.lengths[verifiedRecordHash] &&
-      this.lengths[verifiedRecordHash] > 0
+      this.lengths[validatedRecordHash] &&
+      this.lengths[validatedRecordHash] > 0
     ) {
-      return verifiedRecordHash
+      return validatedRecordHash
     }
 
-    const recordString = [verifiedRecordHash, verifiedRecord].join('\t') + '\n'
+    const recordString =
+      formatRecord({
+        recordHash: validatedRecordHash,
+        recordString: dataRecordString,
+      }) + '\n'
 
-    this.update(recordHash, recordString.length, ownerHash)
+    this.update({
+      recordHash,
+      ownerHash,
+      siteHash,
+      linkHash,
+      dataHash,
+      tag,
+      length: recordString.length,
+    })
 
     const fd = await this.open()
     await appendFile(fd, recordString, 'utf8')
@@ -175,21 +226,24 @@ class Store {
     return stream
   }
 
-  public async findByTag(
-    ownerHash: Hash,
-    tag: string,
-    limit: number = 0,
-    offset: number = 0
-  ): Promise<string> {
-    assert.ok(typeof ownerHash === 'string', 'owner hash must be a string')
-    assert.ok(
-      ownerHash.length === this.shaLength,
-      'owner hash must be 128 characters in length'
-    )
-    assert.ok(typeof tag === 'string', 'tag must be a string')
-    assert.ok(tag.length <= 32, 'tag must be 32 characters in length or less')
+  public async find({
+    ownerHash,
+    siteHash,
+    linkHash,
+    dataHash,
+    tag,
+    limit,
+    offset,
+  }: IFind): Promise<string> {
+    let hash
 
-    let hash = this.owners[ownerHash]
+    // if () {
+
+    // }
+    // else {
+    //   throw new Error('404')
+    // }
+
     let position = this.positions[hash]
     let length = this.lengths[hash] - 1
 
@@ -207,7 +261,6 @@ class Store {
       const {buffer} = await read(fd, recordBuffer, 0, length, position)
       const recordString = buffer.toString('utf8')
       const record = parseRecord(recordString)
-      hash = record.parentHash
       position = this.positions[hash]
       length = this.lengths[hash] - 1
 
@@ -229,10 +282,6 @@ class Store {
     await this.close(fd)
 
     return results.join('\n')
-  }
-
-  getCurrentParent(ownerHash: Hash) {
-    return this.owners[ownerHash] || this.emptyHash
   }
 }
 
