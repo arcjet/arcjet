@@ -3,7 +3,7 @@ import * as readline from 'readline'
 import {strict as assert} from 'assert'
 import * as nacl from 'tweetnacl'
 
-import {Path, Hash, HashInt, HashSet, IFind, IUpdate} from './types'
+import {Path, Hash, HashInt, HashHash, HashSet, IFind, IUpdate} from './types'
 import {open, close, read, appendFile} from './utils'
 import {hexToBytes, bytesToHex} from './client_utils'
 import {parseRecord, formatDataRecord, formatRecord} from './format'
@@ -16,10 +16,10 @@ const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 class Store {
   private positions: HashInt = {}
   private lengths: HashInt = {}
-  private ownerHashes: HashSet = {}
+  private userHashes: HashSet = {}
   private siteHashes: HashSet = {}
   private linkHashes: HashSet = {}
-  private dataHashes: HashSet = {}
+  private dataHashes: HashHash = {}
   private tags: HashSet = {}
   private path: Path
   private dblen: number = 0
@@ -29,34 +29,6 @@ class Store {
   public open = async (path: Path = this.path): Promise<number> =>
     await open(path, 'a+')
   public close = async (fd: number): Promise<void> => await close(fd)
-
-  private updateSet(set: HashSet, key: string, value: string) {
-    set[key] ? set[key].add(value) : (set[key] = new Set([value]))
-  }
-
-  private update({
-    recordHash,
-    ownerHash,
-    siteHash,
-    linkHash,
-    dataHash,
-    tag,
-    length,
-  }: IUpdate) {
-    // Data access
-    this.positions[recordHash] = this.dblen
-    this.lengths[recordHash] = length
-    this.dblen = this.dblen + length
-
-    // Indexing for find method
-    this.updateSet(this.ownerHashes, ownerHash, recordHash)
-    this.updateSet(this.siteHashes, siteHash, recordHash)
-    this.updateSet(this.linkHashes, linkHash, recordHash)
-    this.updateSet(this.dataHashes, dataHash, recordHash)
-    this.updateSet(this.tags, tag, recordHash)
-
-    console.log('tag', tag, 'recordHash', recordHash, 'length', length)
-  }
 
   public init = (path: Path) =>
     new Promise(async (resolve, reject) => {
@@ -69,7 +41,7 @@ class Store {
         rl.on('line', line => {
           const {
             recordHash,
-            ownerHash,
+            userHash,
             siteHash,
             linkHash,
             dataHash,
@@ -77,7 +49,7 @@ class Store {
           } = parseRecord(line)
           this.update({
             recordHash,
-            ownerHash,
+            userHash,
             siteHash,
             linkHash,
             dataHash,
@@ -102,7 +74,7 @@ class Store {
   public async set(record: string): Promise<Hash> {
     const {
       recordHash,
-      ownerHash,
+      userHash,
       siteHash,
       linkHash,
       dataHash,
@@ -138,7 +110,7 @@ class Store {
 
     const dataRecordString = formatDataRecord({
       signature,
-      ownerHash,
+      userHash,
       siteHash,
       linkHash,
       dataHash,
@@ -168,7 +140,7 @@ class Store {
 
     this.update({
       recordHash,
-      ownerHash,
+      userHash,
       siteHash,
       linkHash,
       dataHash,
@@ -226,30 +198,35 @@ class Store {
     return stream
   }
 
+  // user:hash site:hash
+
   public async find({
-    ownerHash,
-    siteHash,
-    linkHash,
-    dataHash,
+    user,
+    site,
+    link,
+    data,
     tag,
     limit,
     offset,
   }: IFind): Promise<string> {
-    let hash
+    let results: Set<string> = new Set()
 
-    // if () {
+    if (dataHash) {
+      results.add(this.dataHashes[dataHash])
+    }
 
-    // }
-    // else {
-    //   throw new Error('404')
-    // }
+    if (linkHash) {
+      results = union(results, this.linkHashes[linkHash])
+    }
+
+    if (siteHash) {
+      results
+    }
 
     let position = this.positions[hash]
     let length = this.lengths[hash] - 1
 
     const fd = await this.open(this.path)
-
-    const results: string[] = []
 
     let currentLimit = 0
     let currentOffset = 0

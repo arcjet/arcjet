@@ -15,12 +15,6 @@ export const gateway = (
 
     const nodeClient = new NodeClient(host, peerPort)
 
-    const corsOptionsDelegate = function(req: express.Request, cb: any) {
-      cb(null, {origin: req.headers.origin, credentials: true})
-    }
-
-    app.use(cors(corsOptionsDelegate))
-
     const peerserver = ExpressPeerServer({port: peerPort, path: '/peers'})
 
     peerserver.on('connection', (id: string) => {

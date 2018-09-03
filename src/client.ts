@@ -3,7 +3,14 @@ import * as QRCode from 'qrcode'
 
 import {parseRecord, formatDataRecord, formatRecord} from './format'
 import {assert, hexToBytes, bytesToHex} from './client_utils'
-import {HashHash, ArcjetStorageKeys, ArcjetStorage, ISet, IFind} from './types'
+import {
+  HashHash,
+  ArcjetStorageKeys,
+  ArcjetStorage,
+  ISet,
+  IFind,
+  RecordMetadata,
+} from './types'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -13,7 +20,7 @@ const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 export default class Arcjet {
   public host: string
 
-  private owners: HashHash = {}
+  private users: HashHash = {}
   private shaLength = 128
   private emptyHash: string
   private siteHash: string
@@ -34,14 +41,14 @@ export default class Arcjet {
   private async save(keys: any) {
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY, keys.publicKey)
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PRIVATE_KEY, keys.privateKey)
-    localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, this.emptyHash)
-    const ownerHash = await this.set(keys.publicKey, 'owner')
-    localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, ownerHash)
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_USER_HASH, this.emptyHash)
+    const userHash = await this.set(keys.publicKey, 'user')
+    localStorage.setItem(ArcjetStorageKeys.ARCJET_USER_HASH, userHash)
   }
 
   private load(): ArcjetStorage {
-    const ARCJET_OWNER_HASH = localStorage.getItem(
-      ArcjetStorageKeys.ARCJET_OWNER_HASH
+    const ARCJET_USER_HASH = localStorage.getItem(
+      ArcjetStorageKeys.ARCJET_USER_HASH
     )
     const ARCJET_PUBLIC_KEY = localStorage.getItem(
       ArcjetStorageKeys.ARCJET_PUBLIC_KEY
@@ -50,9 +57,9 @@ export default class Arcjet {
       ArcjetStorageKeys.ARCJET_PRIVATE_KEY
     )
 
-    if (ARCJET_OWNER_HASH && ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
+    if (ARCJET_USER_HASH && ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
       return {
-        ARCJET_OWNER_HASH,
+        ARCJET_USER_HASH,
         ARCJET_PUBLIC_KEY,
         ARCJET_PRIVATE_KEY,
       }
@@ -61,8 +68,13 @@ export default class Arcjet {
     }
   }
 
-  public owner() {
-    return localStorage.getItem(ArcjetStorageKeys.ARCJET_OWNER_HASH)
+  public user(): string {
+    const user = localStorage.getItem(ArcjetStorageKeys.ARCJET_USER_HASH)
+    if (user) {
+      return user
+    } else {
+      throw new Error('No user')
+    }
   }
 
   public async generate() {
@@ -79,15 +91,15 @@ export default class Arcjet {
   }
 
   public validate = async (record: string): Promise<string> => {
-    const {recordHash, ownerHash, dataHash, signature, data} = parseRecord(
+    const {recordHash, userHash, dataHash, signature, data} = parseRecord(
       record
     )
-    let ownerPublicKey = this.owners[ownerHash]
+    let userPublicKey = this.users[userHash]
 
-    if (!ownerPublicKey) {
-      const req = await fetch(`${this.host}/store/${ownerHash}`)
+    if (!userPublicKey) {
+      const req = await fetch(`${this.host}/store/${userHash}`)
       const data = await req.text()
-      ownerPublicKey = parseRecord(data).data
+      userPublicKey = parseRecord(data).data
     }
 
     const recDataHash = hashAsString(data)
@@ -96,7 +108,7 @@ export default class Arcjet {
     const verified = nacl.sign.detached.verify(
       hexToBytes(recDataHash),
       hexToBytes(signature),
-      hexToBytes(ownerPublicKey)
+      hexToBytes(userPublicKey)
     )
 
     console.log(
@@ -123,37 +135,37 @@ export default class Arcjet {
     return '404'
   }
 
-  public async set({
-    data,
-    tag,
-    version = '0.0.0',
-    network = 'mainnet',
-    linkHash = this.emptyHash,
-    siteHash = this.siteHash,
-    encoding = 'utf-8',
-    type = 'text/plain',
-  }: ISet) {
-    const {
-      ARCJET_OWNER_HASH: ownerHash,
-      ARCJET_PRIVATE_KEY: privateKey,
-    } = this.load()
-    const dataHashArray = hashAsByteArray(data)
+  public async set(
+    content: string,
+    {
+      site = this.siteHash,
+      link = this.emptyHash,
+      tag = '',
+      time = Date.now(),
+      type = 'json',
+      version = '0.0.0',
+      network = 'mainnet',
+    }: RecordMetadata
+  ) {
+    const {ARCJET_USER_HASH: user, ARCJET_PRIVATE_KEY: privateKey} = this.load()
 
-    const signature = nacl.sign.detached(dataHashArray, hexToBytes(privateKey))
+    const dataHashArray = hashAsByteArray(content)
 
     const recordString = formatDataRecord({
-      signature: bytesToHex(signature),
-      ownerHash,
-      siteHash,
-      linkHash,
-      dataHash: bytesToHex(dataHashArray),
-      encoding,
+      user,
+      site,
+      link,
+      data: bytesToHex(dataHashArray),
       type,
       tag,
       version,
       network,
       data,
     })
+
+    const signature = nacl.sign.detached(dataHashArray, hexToBytes(privateKey))
+
+    sig: bytesToHex(signature),
 
     const recordHash = hashAsString(recordString)
 
@@ -170,8 +182,8 @@ export default class Arcjet {
     return recordHash
   }
 
-  public async find({ownerHash, tag, limit, offset}: IFind): Promise<string[]> {
-    const url = [this.host, 'find', ownerHash, tag]
+  public async find({userHash, tag, limit, offset}: IFind): Promise<string[]> {
+    const url = [this.host, 'find', userHash, tag]
     if (limit) url.push(limit.toString())
     if (limit && offset) url.push(offset.toString())
     const res = await fetch(url.join('/'))

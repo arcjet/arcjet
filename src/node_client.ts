@@ -18,7 +18,7 @@ export class NodeClient {
       this.requests.set(id, resolve)
     })
 
-    // TODO don't message all peers
+    // TODO DHT don't message all peers
     this.peers.forEach(peer => {
       peer.send({
         id,
@@ -29,7 +29,7 @@ export class NodeClient {
     return promise
   }
 
-  public setPeer(id: string, ownerRecord: string, range: string) {
+  public setPeer(id: string, userRecord: string, range: string) {
     const peer = this.peer.connect(id)
     peer.on('data', ({id, data}) => {
       this.requests.get(id)(data)

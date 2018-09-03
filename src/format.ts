@@ -1,27 +1,27 @@
-import {ArcjetRecord, ArcjetDataRecord, ArcjetPartialRecord} from './types'
+import {Record} from './types'
 import {getFixedHex} from './client_utils'
 
 export const parseRecord = (recordString: string): ArcjetRecord => {
   const [
-    recordHash,
-    signature,
-    ownerHash,
-    siteHash,
-    linkHash,
-    dataHash,
-    encoding,
-    type,
-    tag,
-    version,
-    network,
-    time,
-    data,
+    recordHash, // 64
+    signature, // 64
+    userHash, // 64
+    siteHash, // 64
+    linkHash, // 64
+    dataHash, // 64
+    tag, // 64
+    encoding, // 32
+    type, // 32
+    version, //
+    network, //
+    time, //
+    data, //
   ] = recordString.split('\t')
 
   return {
     recordHash,
     signature,
-    ownerHash,
+    userHash,
     siteHash,
     linkHash,
     dataHash,
@@ -36,33 +36,19 @@ export const parseRecord = (recordString: string): ArcjetRecord => {
 }
 
 export const formatDataRecord = ({
-  signature,
-  ownerHash,
-  siteHash,
-  linkHash,
-  dataHash,
-  encoding,
-  type,
+  hash,
+  sig,
+  user,
+  site,
+  link,
+  data,
   tag,
+  time,
+  type,
   version,
   network,
-  time,
-  data,
-}: ArcjetDataRecord): string =>
-  [
-    signature, // 128
-    ownerHash, // 128
-    siteHash, // 128
-    linkHash, // 128
-    dataHash, // 128
-    tag.padEnd(128, ' '), // 128
-    encoding.padEnd(32, ' '), // 32
-    type.padEnd(32, ' '), // 32
-    version.padEnd(32, ' '), // 32
-    network.padEnd(32, ' '), // 32
-    getFixedHex(time, 16), // 16
-    data, // <1000000000 (1GB)
-  ].join('\t')
+  content,
+}: Record): Uint8Array => new Uint8Array([...hash])
 
 export const formatRecord = ({recordHash, recordString}: ArcjetPartialRecord) =>
   `${recordHash}\t${recordString}`
