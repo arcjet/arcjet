@@ -20,3 +20,43 @@ export const bytesToHex = (arr: Uint8Array): string => {
 
 export const getFixedHex = (num: number, length: number) =>
   num.toString(16).padStart(length, '0')
+
+export const shortBytesToStr = (arr: Uint8Array): string =>
+  String.fromCharCode(...arr).trim()
+
+export const bytesToStr = (arr: Uint8Array): string => {
+  const strArr: string[] = []
+  for (let i = 0, ii = arr.length; i < ii; i++) {
+    strArr.push(String.fromCharCode(arr[i]))
+  }
+  return strArr.join('').trim()
+}
+
+export const strToBytes = (str: string, len?: number) => {
+  const arr = new Uint8Array(len || str.length)
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    arr[i] = str.charCodeAt(i)
+  }
+  return arr
+}
+
+export const numToBytes = (num: number, len: number): Uint8Array =>
+  hexToBytes(getFixedHex(num, len))
+
+export const bytesToInt = (bytes: Uint8Array): number =>
+  parseInt(bytesToHex(bytes), 16)
+
+export const bytesEquals = (
+  bytesA: Uint8Array,
+  bytesB: Uint8Array
+): boolean => {
+  if (bytesA.length === bytesB.length) {
+    for (let i = 0, ii = bytesA.length; i < ii; i++) {
+      if (bytesA[i] !== bytesB[i]) {
+        return false
+      }
+    }
+    return true
+  }
+  return false
+}

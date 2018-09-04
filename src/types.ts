@@ -17,18 +17,18 @@ export interface Key {
 export interface ArcjetStorage {
   ARCJET_PRIVATE_KEY: string
   ARCJET_PUBLIC_KEY: string
-  ARCJET_USER_HASH: string
 }
 export enum ArcjetStorageKeys {
   ARCJET_PRIVATE_KEY = 'ARCJET_PRIVATE_KEY',
   ARCJET_PUBLIC_KEY = 'ARCJET_PUBLIC_KEY',
-  ARCJET_USER_HASH = 'ARCJET_USER_HASH',
 }
 export type FalsyArcjetStorage = ArcjetStorage | undefined
 
 export type FalsyString = string | false
-export type HashInt = {[hash: string]: number}
 export type HashHash = {[hash: string]: Hash}
+export type HashInt = {[hash: string]: number}
+export type HashBool = {[hash: string]: boolean}
+export type HashBytes = {[hash: string]: Uint8Array}
 export type HashSet = {[hash: string]: Set<Hash>}
 
 export interface RecordHash {
@@ -38,33 +38,18 @@ export interface RecordHash {
 }
 
 export interface RecordMetadata {
-  user: Hash
-  site: Hash
-  link: Hash
-  tag: string
-  time: number
-  type: string
-  version: string
-  network: string
+  user?: Hash
+  site?: Hash
+  link?: Hash
+  tag?: string
+  time?: number
+  type?: string
+  version?: string
+  network?: string
 }
 
 export interface RecordContent {
   content: string
-}
-
-export enum ByteLengths {
-  hash = 64,
-  sig = 64,
-  user = 64,
-  site = 64,
-  link = 64,
-  data = 64,
-  tag = 64,
-  time = 16,
-  type = 16,
-  version = 16,
-  network = 16,
-  content = 7 * 64 + 16 * 4,
 }
 
 export type Record = RecordHash & RecordMetadata & RecordContent

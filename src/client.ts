@@ -7,7 +7,6 @@ import {
   HashHash,
   ArcjetStorageKeys,
   ArcjetStorage,
-  ISet,
   IFind,
   RecordMetadata,
 } from './types'
@@ -41,15 +40,9 @@ export default class Arcjet {
   private async save(keys: any) {
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY, keys.publicKey)
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PRIVATE_KEY, keys.privateKey)
-    localStorage.setItem(ArcjetStorageKeys.ARCJET_USER_HASH, this.emptyHash)
-    const userHash = await this.set(keys.publicKey, 'user')
-    localStorage.setItem(ArcjetStorageKeys.ARCJET_USER_HASH, userHash)
   }
 
   private load(): ArcjetStorage {
-    const ARCJET_USER_HASH = localStorage.getItem(
-      ArcjetStorageKeys.ARCJET_USER_HASH
-    )
     const ARCJET_PUBLIC_KEY = localStorage.getItem(
       ArcjetStorageKeys.ARCJET_PUBLIC_KEY
     )
@@ -57,9 +50,8 @@ export default class Arcjet {
       ArcjetStorageKeys.ARCJET_PRIVATE_KEY
     )
 
-    if (ARCJET_USER_HASH && ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
+    if (ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
       return {
-        ARCJET_USER_HASH,
         ARCJET_PUBLIC_KEY,
         ARCJET_PRIVATE_KEY,
       }
@@ -69,7 +61,7 @@ export default class Arcjet {
   }
 
   public user(): string {
-    const user = localStorage.getItem(ArcjetStorageKeys.ARCJET_USER_HASH)
+    const user = localStorage.getItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY)
     if (user) {
       return user
     } else {
@@ -156,8 +148,9 @@ export default class Arcjet {
       site,
       link,
       data: bytesToHex(dataHashArray),
-      type,
       tag,
+      time,
+      type,
       version,
       network,
       data,
