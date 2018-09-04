@@ -60,3 +60,16 @@ export const bytesEquals = (
   }
   return false
 }
+
+export const blobToBytes = async (blob: Blob): Promise<{}> =>
+  new Promise(
+    (resolve, reject): void => {
+      const fr = new FileReader()
+      fr.onload = evt => (evt.target ? resolve(fr.result as {}) : reject())
+      fr.onerror = evt => reject(evt)
+      fr.readAsArrayBuffer(blob)
+    }
+  )
+
+export const bytesToBlob = (arr: Uint8Array, type: string) =>
+  new Blob([arr], {type})

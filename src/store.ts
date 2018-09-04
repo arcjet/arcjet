@@ -4,7 +4,7 @@ import {strict as assert} from 'assert'
 import * as nacl from 'tweetnacl'
 
 import {Path, Hash, HashInt, HashHash, HashSet, IFind, IUpdate} from './types'
-import {open, close, read, appendFile} from './utils'
+import {open, close, read, appendFile} from './server_utils'
 import {hexToBytes, bytesToHex} from './client_utils'
 import {parseRecord, formatDataRecord, formatRecord} from './format'
 
@@ -23,7 +23,7 @@ class Store {
   private tags: HashSet = {}
   private path: Path
   private dblen: number = 0
-  public shaLength = 128
+  public shaLength = 64
   public emptyHash: string
 
   public open = async (path: Path = this.path): Promise<number> =>
@@ -158,7 +158,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 128 characters in length'
+      'record hash must be 64 bytes in length'
     )
 
     const position = this.positions[hash]
@@ -179,7 +179,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 128 characters in length'
+      'record hash must be 64 bytes in length'
     )
 
     const position = this.positions[hash]

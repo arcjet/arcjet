@@ -1,15 +1,17 @@
 import * as nacl from 'tweetnacl'
 import * as QRCode from 'qrcode'
+import * as qs from 'querystring'
 
-import {parseRecord, formatDataRecord, formatRecord} from './format'
-import {assert, hexToBytes, bytesToHex} from './client_utils'
 import {
-  HashHash,
-  ArcjetStorageKeys,
-  ArcjetStorage,
-  IFind,
-  RecordMetadata,
-} from './types'
+  assert,
+  hexToBytes,
+  bytesToHex,
+  strToBytes,
+  blobToBytes,
+  bytesToBlob,
+} from './client_utils'
+import {ArcjetStorageKeys, ArcjetStorage, IFind, RecordMetadata} from './types'
+import {Record} from './record'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -19,8 +21,7 @@ const hashAsString = (data: string): string => bytesToHex(hashAsByteArray(data))
 export default class Arcjet {
   public host: string
 
-  private users: HashHash = {}
-  private shaLength = 128
+  private shaLength = 64
   private emptyHash: string
   private siteHash: string
 
@@ -60,7 +61,7 @@ export default class Arcjet {
     }
   }
 
-  public user(): string {
+  public get user(): string {
     const user = localStorage.getItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY)
     if (user) {
       return user
@@ -82,51 +83,7 @@ export default class Arcjet {
     }
   }
 
-  public validate = async (record: string): Promise<string> => {
-    const {recordHash, userHash, dataHash, signature, data} = parseRecord(
-      record
-    )
-    let userPublicKey = this.users[userHash]
-
-    if (!userPublicKey) {
-      const req = await fetch(`${this.host}/store/${userHash}`)
-      const data = await req.text()
-      userPublicKey = parseRecord(data).data
-    }
-
-    const recDataHash = hashAsString(data)
-    const recRecordHash = hashAsString(record.substr(this.shaLength + 1))
-
-    const verified = nacl.sign.detached.verify(
-      hexToBytes(recDataHash),
-      hexToBytes(signature),
-      hexToBytes(userPublicKey)
-    )
-
-    console.log(
-      verified,
-      recDataHash === dataHash,
-      recRecordHash === recordHash,
-      recRecordHash,
-      recordHash
-    )
-
-    if (verified && recDataHash === dataHash && recRecordHash === recordHash) {
-      return data
-    } else {
-      return '400'
-    }
-  }
-
-  public async get(recordHash: string): Promise<string> {
-    const res = await fetch(`${this.host}/store/${recordHash}`)
-    if (res.status === 200) {
-      const record = await res.text()
-      return await this.validate(record)
-    }
-    return '404'
-  }
-
+  // TODO better error handling
   public async set(
     content: string,
     {
@@ -134,58 +91,65 @@ export default class Arcjet {
       link = this.emptyHash,
       tag = '',
       time = Date.now(),
-      type = 'json',
+      type = 'text/plain',
       version = '0.0.0',
       network = 'mainnet',
     }: RecordMetadata
   ) {
-    const {ARCJET_USER_HASH: user, ARCJET_PRIVATE_KEY: privateKey} = this.load()
+    const {
+      ARCJET_PUBLIC_KEY: user,
+      ARCJET_PRIVATE_KEY: privateKey,
+    } = this.load()
 
-    const dataHashArray = hashAsByteArray(content)
-
-    const recordString = formatDataRecord({
-      user,
-      site,
-      link,
-      data: bytesToHex(dataHashArray),
-      tag,
-      time,
-      type,
-      version,
-      network,
-      data,
-    })
-
-    const signature = nacl.sign.detached(dataHashArray, hexToBytes(privateKey))
-
-    sig: bytesToHex(signature),
-
-    const recordHash = hashAsString(recordString)
+    const record = new Record(
+      strToBytes(content),
+      {
+        user,
+        site,
+        link,
+        tag,
+        time,
+        type,
+        version,
+        network,
+      },
+      hexToBytes(privateKey)
+    )
 
     const res = await fetch(`${this.host}/store`, {
       method: 'POST',
-      body: formatRecord({recordHash, recordString}),
+      body: bytesToBlob(record.data, type),
     })
 
-    const recRecordHash = await res.text()
+    const recID = await res.text()
     assert(
-      recordHash === recRecordHash,
+      record.id === recID,
       'Record hash from server must match computed record hash'
     )
-    return recordHash
+
+    return recID
   }
 
-  public async find({userHash, tag, limit, offset}: IFind): Promise<string[]> {
-    const url = [this.host, 'find', userHash, tag]
-    if (limit) url.push(limit.toString())
-    if (limit && offset) url.push(offset.toString())
-    const res = await fetch(url.join('/'))
+  public async get(recordHash: string): Promise<Record> {
+    const res = await fetch(`${this.host}/store/${recordHash}`)
+    if (res.status === 200) {
+      const record = await res.blob()
+      const bytes: Uint8Array = (await blobToBytes(record)) as Uint8Array
+      return new Record(bytes)
+    } else {
+      throw new Error(res.statusText)
+    }
+  }
+
+  public async find(query: IFind): Promise<Record[]> {
+    const res = await fetch(`${this.host}/find?${qs.stringify(query)}`)
     if (res.status === 200) {
       const response = await res.text()
       const records = response.split('\n')
-      const results = await Promise.all(records.map(this.validate))
-      return results as any
+      const results = await Promise.all(records.map(this.get))
+      return results
+    } else {
+      throw new Error(res.statusText)
     }
-    return ['404']
   }
 }

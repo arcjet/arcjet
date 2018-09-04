@@ -13,9 +13,10 @@ import {
 } from './client_utils'
 
 export class Record {
-  private data: Uint8Array
   private zeroes16 = new Uint8Array(16)
   private zeroes64 = new Uint8Array(64)
+
+  public data: Uint8Array
 
   private newMetadata({
     user,

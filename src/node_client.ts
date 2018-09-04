@@ -6,7 +6,7 @@ export class NodeClient {
   private peers = new Map()
   private requests = new Map()
 
-  public shaLength = 128
+  public shaLength = 64
 
   constructor(host: string, port: number) {
     this.peer = new Peer({host, port, path: '/peers'})
