@@ -59,24 +59,12 @@ export interface ArcjetPartialRecord {
   record: string
 }
 
-export interface IFind {
-  user?: Hash
-  site?: Hash
-  link?: Hash
-  data?: Hash
-  tag?: string
+export interface QueryOptions {
   limit?: number
   offset?: number
 }
 
-export interface ISet {
-  tag?: Hash
-  link?: Hash
-  site?: Hash
-  version?: string
-  network?: string
-  type?: string
-}
+export type IFind = RecordMetadata & QueryOptions
 
 export interface IUpdate {
   hash: string

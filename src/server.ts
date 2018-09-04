@@ -1,7 +1,6 @@
 import * as express from 'express'
 import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
-import {strict as assert} from 'assert'
 
 import Store from './store'
 import {NodeClient} from './node_client'
@@ -14,8 +13,7 @@ export const server = (app: express.Express, store: Store | NodeClient) => {
 
   app.use(cors(corsOptionsDelegate))
   app.use(
-    bodyParser.text({
-      defaultCharset: 'utf-8',
+    bodyParser.raw({
       limit: '1gb',
       type: '*/*',
     })
@@ -50,7 +48,8 @@ export const server = (app: express.Express, store: Store | NodeClient) => {
   app.post('/store', async (req, res) => {
     try {
       if (req.body) {
-        const hash = await store.set(req.body)
+        const body: Uint8Array = req.body
+        const hash = await store.set(body)
         res.statusCode = 200
         res.contentType('text/plain')
         res.send(hash)

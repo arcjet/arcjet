@@ -68,6 +68,10 @@ export class Record {
     )
   }
 
+  public get index(): Uint8Array {
+    return this.data.slice(0, FieldPositions['data'])
+  }
+
   public get metadata(): Uint8Array {
     return this.data.slice(FieldPositions['sig'], MetadataLength)
   }

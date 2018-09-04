@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as program from 'caporal'
 import * as fs from 'fs'
+import * as os from 'os'
 import * as path from 'path'
 import * as got from 'got'
 import * as express from 'express'
@@ -13,12 +14,18 @@ const pkg = require('../package.json')
 export const DEFAULT_PORT = 3000
 export const GATEWAY_PORT = 6000
 export const PEER_PORT = 9000
+const homedir = `${os.homedir()}/.arcjet`
 
 program.version(pkg.version)
 
 program
   .command('standalone', 'Start a standalone server with a database file')
-  .argument('<file>', 'File to start the database with')
+  .argument(
+    '<file>',
+    'File to start the database with',
+    program.STRING,
+    homedir
+  )
   .option(
     '--port <port>',
     'Port number to listen on',
@@ -28,8 +35,7 @@ program
   )
   .action(async (args, options, logger) => {
     try {
-      const store = new Store()
-      await store.init(args.file)
+      const store = new Store(args.file)
       const app = server(express(), store)
       app.listen(parseInt(options.port, 10) || DEFAULT_PORT, () => {
         logger.info(`Arcjet started on port ${options.port || DEFAULT_PORT}`)
