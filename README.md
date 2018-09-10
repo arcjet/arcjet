@@ -2,6 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/arcjet.svg)](https://badge.fury.io/js/arcjet)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farcjet%2Farcjet.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Farcjet%2Farcjet?ref=badge_shield)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/arcjet)
 
 Be sure to check out our progress on our project board: https://github.com/arcjet/arcjet/projects/1
 
