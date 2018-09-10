@@ -5,7 +5,7 @@ import {strict as assert} from 'assert'
 
 import {Path, Hash, RecordMetadata} from './types'
 import {readFile, writeFile, appendFile} from './server_utils'
-import {strToBytes} from './client_utils'
+import {strToBytes, bytesToHex} from './client_utils'
 import {Record} from './record'
 
 class Store {
@@ -18,12 +18,16 @@ class Store {
   }
 
   // TODO more checking, maybe
-  public async set(data: Uint8Array): Promise<Hash> {
+  public async set(data: Buffer): Promise<Hash> {
     const record = new Record(data)
     await writeFile(path.resolve(this.path, record.id), record.data, {
       encoding: 'binary',
     })
-    await appendFile(path.resolve(this.path, 'index.db'), record.index, 'utf8')
+    await appendFile(
+      path.resolve(this.path, 'index.db'),
+      bytesToHex(record.index) + '\n',
+      'utf8'
+    )
     return record.id
   }
 
@@ -61,31 +65,27 @@ class Store {
 
       rl.on('line', line => {
         const record = new Record(strToBytes(line))
-        if (user && record.user !== user) {
+        if (
+          user &&
+          record.user !== user &&
+          site &&
+          record.site !== site &&
+          link &&
+          record.link !== link &&
+          tag &&
+          record.tag !== tag &&
+          time &&
+          +record.time !== +time &&
+          type &&
+          record.type !== type &&
+          version &&
+          record.version !== version &&
+          network &&
+          record.network !== network
+        ) {
           return
         }
-        if (site && record.site !== site) {
-          return
-        }
-        if (link && record.link !== link) {
-          return
-        }
-        if (tag && record.tag !== tag) {
-          return
-        }
-        if (time && +record.time !== +time) {
-          return
-        }
-        if (type && record.type !== type) {
-          return
-        }
-        if (version && record.version !== version) {
-          return
-        }
-        if (network && record.network !== network) {
-          return
-        }
-        results.push(line)
+        results.push(record.id)
       })
 
       rl.on('close', () => {

@@ -1,5 +1,4 @@
 import * as express from 'express'
-import * as cors from 'cors'
 
 import {ExpressPeerServer} from 'peer'
 import {NodeClient} from './node_client'

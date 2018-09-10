@@ -175,6 +175,8 @@ export class Record {
       bytesEquals(nacl.hash(record), this.getRawMetadataByField('hash')),
       'Record id matches record data'
     )
+
+    // TODO validate site
   }
 
   public empty(): void {

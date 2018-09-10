@@ -37,7 +37,7 @@ export const server = (app: express.Express, store: Store | NodeClient) => {
       }
     } catch (err) {
       if (err === 'Record Not Found') {
-        res.status(404).send('Not Found')
+        res.sendStatus(404)
       } else {
         console.error(err)
         res.status(500).send(err)
@@ -47,63 +47,20 @@ export const server = (app: express.Express, store: Store | NodeClient) => {
 
   app.post('/store', async (req, res) => {
     try {
-      if (req.body) {
-        const body: Uint8Array = req.body
-        const hash = await store.set(body)
-        res.statusCode = 200
-        res.contentType('text/plain')
-        res.send(hash)
-      } else {
-        const chunks: Buffer[] = []
-
-        req.on('data', (data: Buffer) => {
-          chunks.push(data)
-        })
-
-        req.on('end', async () => {
-          try {
-            const hash = await store.set(Buffer.concat(chunks).toString('utf8'))
-            res.statusCode = 200
-            res.contentType('text/plain')
-            res.send(hash)
-          } catch (err) {
-            console.error(err)
-            res.status(500).send(err)
-          }
-        })
-      }
+      const body: Buffer = req.body
+      const hash = await store.set(body)
+      res.statusCode = 200
+      res.contentType('text/plain')
+      res.send(hash)
     } catch (err) {
       console.error(err)
       res.status(500).send(err)
     }
   })
 
-  app.get('/find/:owner/:tag', async (req, res) => {
+  app.get('/find', async (req, res) => {
     try {
-      const {owner, tag} = req.params
-      const records = await store.findByTag(owner, tag)
-      res.status(200).send(records)
-    } catch (err) {
-      console.error(err)
-      res.sendStatus(500)
-    }
-  })
-
-  app.get('/find/:owner/:tag/:limit', async (req, res) => {
-    try {
-      const {owner, tag, limit} = req.params
-      const records = await store.findByTag(owner, tag, limit)
-      res.status(200).send(records)
-    } catch (err) {
-      console.error(err)
-      res.sendStatus(500)
-    }
-  })
-
-  app.get('/find/:owner/:tag/:limit/:offset', async (req, res) => {
-    try {
-      const {owner, tag, limit, offset} = req.params
-      const records = await store.findByTag(owner, tag, limit, offset)
+      const records = await store.find(req.query)
       res.status(200).send(records)
     } catch (err) {
       console.error(err)

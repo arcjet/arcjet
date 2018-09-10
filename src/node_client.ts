@@ -1,5 +1,6 @@
 import * as Peer from 'peerjs'
 import * as uuidv4 from 'uuid/v4'
+import {RecordMetadata} from './types'
 
 export class NodeClient {
   private peer: Peer
@@ -12,6 +13,7 @@ export class NodeClient {
     this.peer = new Peer({host, port, path: '/peers'})
   }
 
+  // TODO DHT provide credit to peers for serving messages
   private message(data: {}): Promise<string> {
     const id = uuidv4()
     const promise: Promise<string> = new Promise(resolve => {
@@ -42,7 +44,7 @@ export class NodeClient {
     this.peers.delete(id)
   }
 
-  public set(record: string): Promise<string> {
+  public set(record: Buffer): Promise<string> {
     return this.message({type: 'SET', record})
   }
 
@@ -50,12 +52,7 @@ export class NodeClient {
     return this.message({type: 'GET', hash})
   }
 
-  public findByTag(
-    owner: string,
-    tag: string,
-    limit: number = 0,
-    offset: number = 0
-  ) {
-    return this.message({type: 'TAG', owner, tag, limit, offset})
+  public find(metadata: RecordMetadata): Promise<string> {
+    return this.message({type: 'FIND', metadata})
   }
 }
