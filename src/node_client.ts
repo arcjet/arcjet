@@ -1,3 +1,4 @@
+/*
 import * as Peer from 'peerjs'
 import * as uuidv4 from 'uuid/v4'
 import {RecordMetadata} from './types'
@@ -56,3 +57,4 @@ export class NodeClient {
     return this.message({type: 'FIND', metadata})
   }
 }
+*/

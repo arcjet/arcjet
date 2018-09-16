@@ -47,11 +47,15 @@ export class Record {
   ) {
     if (metadata && secretKey) {
       const dataHash = nacl.hash(data)
-      const signature = nacl.sign.detached(dataHash, secretKey)
+      const metadataBytes = this.newMetadata(metadata)
+      const signature = nacl.sign.detached(
+        new Uint8Array([...dataHash, ...metadataBytes]),
+        secretKey
+      )
       const record = new Uint8Array([
         ...signature,
         ...dataHash,
-        ...this.newMetadata(metadata),
+        ...metadataBytes,
         ...data,
       ])
       const id = nacl.hash(record)
@@ -143,6 +147,10 @@ export class Record {
     return img
   }
 
+  public get image() {
+    return this.getImage(this.type)
+  }
+
   public get jpeg() {
     return this.getImage('image/jpeg')
   }
@@ -164,9 +172,14 @@ export class Record {
     )
 
     // Validate ownership
+    const metadata = this.metadata
     const signature = this.getRawMetadataByField('sig')
     const user = this.getRawMetadataByField('user')
-    const verified = nacl.sign.detached.verify(hash, signature, user)
+    const verified = nacl.sign.detached.verify(
+      new Uint8Array([...hash, ...metadata]),
+      signature,
+      user
+    )
     assert(verified, 'Record is signed by user')
 
     // Validate record
@@ -175,8 +188,6 @@ export class Record {
       bytesEquals(nacl.hash(record), this.getRawMetadataByField('hash')),
       'Record id matches record data'
     )
-
-    // TODO validate site
   }
 
   public empty(): void {

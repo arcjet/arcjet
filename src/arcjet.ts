@@ -8,7 +8,7 @@ import * as express from 'express'
 
 import Store from './store'
 import {server} from './server'
-import {gateway} from './gateway'
+// import {gateway} from './gateway'
 const pkg = require('../package.json')
 
 export const DEFAULT_PORT = 3000
@@ -21,7 +21,7 @@ program.version(pkg.version)
 program
   .command('standalone', 'Start a standalone server with a database file')
   .argument(
-    '<file>',
+    '[file]',
     'File to start the database with',
     program.STRING,
     homedir
@@ -76,38 +76,38 @@ program
     }
   })
 
-program
-  .command('gateway', 'Start a gateway server')
-  .argument('<file>', 'File to start the database with')
-  .argument('<host>', 'Hostname')
-  .option(
-    '--gateway-port <gateway_port>',
-    'Gateway port number to listen on',
-    program.INT,
-    GATEWAY_PORT,
-    true
-  )
-  .option(
-    '--peer-port <peer_port>',
-    'Peer port number to listen on',
-    program.INT,
-    PEER_PORT,
-    true
-  )
-  .action(async (args, options, logger) => {
-    try {
-      await gateway(
-        parseInt(options.gateway_port, 10) || GATEWAY_PORT,
-        parseInt(options.peer_port, 10) || PEER_PORT,
-        args.host
-      )
-      logger.info(
-        `Arcjet started on ports ${options.gateway_port ||
-          GATEWAY_PORT} & ${options.peer_port || PEER_PORT}`
-      )
-    } catch (err) {
-      logger.error(err)
-    }
-  })
+// program
+//   .command('gateway', 'Start a gateway server')
+//   .argument('<host>', 'Hostname')
+//   .argument('[file]', 'File to start the database with')
+//   .option(
+//     '--gateway-port <gateway_port>',
+//     'Gateway port number to listen on',
+//     program.INT,
+//     GATEWAY_PORT,
+//     true
+//   )
+//   .option(
+//     '--peer-port <peer_port>',
+//     'Peer port number to listen on',
+//     program.INT,
+//     PEER_PORT,
+//     true
+//   )
+//   .action(async (args, options, logger) => {
+//     try {
+//       await gateway(
+//         parseInt(options.gateway_port, 10) || GATEWAY_PORT,
+//         parseInt(options.peer_port, 10) || PEER_PORT,
+//         args.host
+//       )
+//       logger.info(
+//         `Arcjet started on ports ${options.gateway_port ||
+//           GATEWAY_PORT} & ${options.peer_port || PEER_PORT}`
+//       )
+//     } catch (err) {
+//       logger.error(err)
+//     }
+//   })
 
 program.parse(process.argv)

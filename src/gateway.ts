@@ -1,3 +1,4 @@
+/*
 import * as express from 'express'
 
 import {ExpressPeerServer} from 'peer'
@@ -34,3 +35,4 @@ export const gateway = (
       resolve()
     })
   })
+*/

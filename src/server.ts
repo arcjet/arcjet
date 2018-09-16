@@ -3,10 +3,11 @@ import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
 
 import Store from './store'
-import {NodeClient} from './node_client'
+// import {NodeClient} from './node_client'
 // import {homepage} from './html'
 
-export const server = (app: express.Express, store: Store | NodeClient) => {
+export const server = (app: express.Express, store: Store) => {
+  // | NodeClient
   const corsOptionsDelegate = (req: express.Request, cb: any) => {
     cb(null, {origin: req.headers.origin, credentials: true})
   }
