@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as readline from 'readline'
 import {strict as assert} from 'assert'
 
-import {Path, Hash, RecordMetadata} from './types'
+import {Path, Hash, IFind} from './types'
 import {
   readFile,
   writeFile,
@@ -63,7 +63,8 @@ class Store {
     type,
     version,
     network,
-  }: RecordMetadata): Promise<string> {
+    limit,
+  }: IFind): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       let results: string[] = []
 
@@ -88,14 +89,16 @@ class Store {
           (site && record.site !== site) ||
           (link && record.link !== link) ||
           (tag && record.tag !== tag) ||
-          (time && +record.time !== +time) ||
+          (time && +record.time > +time) ||
           (type && record.type !== type) ||
           (version && record.version !== version) ||
           (network && record.network !== network)
         ) {
           return
         }
-        results.push(record.id)
+        if (!limit || (limit && results.length < limit)) {
+          results.push(record.id)
+        }
       })
 
       rl.on('close', () => {

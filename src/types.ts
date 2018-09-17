@@ -60,18 +60,10 @@ export interface ArcjetPartialRecord {
 }
 
 export interface QueryOptions {
+  order?: number
   limit?: number
   offset?: number
+  hydrate?: boolean
 }
 
 export type IFind = RecordMetadata & QueryOptions
-
-export interface IUpdate {
-  hash: string
-  user: string
-  site: string
-  link: string
-  data: string
-  tag: string
-  length: number
-}

@@ -8,7 +8,7 @@ Be sure to check out our progress on our project board: https://github.com/arcje
 
 ## Disclaimer
 
-This is beta software, the API of which is not yet finalized, nor is the record format. Any code written for this platform will have to be refactored once 1.0 is released, and records migrated. 1.0 is expected to be sometime in early September, 2018.
+This is beta software, the API of which is not yet finalized, nor is the record format. Any code written for this platform will have to be refactored once 1.0 is released, and records migrated. 1.0 is expected to be sometime in early October, 2018.
 
 ## Background
 
@@ -47,7 +47,7 @@ A distributed hash table will associate a desired hash with a peer ID, so it kno
 
 Arcjet is written in TypeScript so as to keep the project approachable to traditional web developers, instead of keeping the technology behind the locked doors of a class of benevolent techno-priests where only they are able to decipher and maintain the code for their users.
 
-Arcjet doesn't use a centralized blockchain, in order to help provide for the scale desired. Minichains of records are created for each Owner Record. All data has an owner with a key, and that owner is expected to pay for that data. Users trusted by a site can have their data paid for on behalf of a Site Owner, if that Site Owner adopts Owner records associated with their owner parent record.
+Arcjet doesn't use a centralized blockchain, in order to help provide for the scale desired. Records are created on the frontend and signed with a user's secret key. All data has an owner with a key, and that owner is expected to pay for that data unless associated with a site in its metadata, at which point, a site is expected to pay for that record. If neither a site nor a user pays for a record, it is expired after one billing period.
 
 The Arcjet network means to solve a few problems in adversarial networks. However, there still exists a few problems with this approach, and this is the best we've been able to come up with so far. It's important and good to acknowledge the weaknesses of all solutions, including this one. Arcjet is meant to solve a few security problems with the techniques used, but there are still possible vulnerabilities that will be important to solve.
 
@@ -56,63 +56,77 @@ The Arcjet network means to solve a few problems in adversarial networks. Howeve
 1. Double-spend - Arcjet's version of double-spend is that currently our gateway server keeps track of all traffic through our server, allowing us to reward server operators and grow the network. A Server Operator, if operating their own gateway, could lie and say Site Owners owe them a zillion dollars, and hold a portion of their records hostage. If site operators could pick and choose who they paid, that'd also present a problem. One possible solution in a fully distributed network is for clients to make several requests for the same resource, and have Site Operators keep track of others' activities, using an operator's number of proven transactions as a means of preventing sybil attacks somehow. This could be called Proof of Transaction, and it's likely something that solveable and could be solved soon.
 1. The Sybil-attack might be a problem, but it more falls into the above considerations, than just a traditional multiple-user attack. This network was designed to accommodate a large number of users, and no special privileges are given to users until they do work, such as serving a transaction, at which point, they wouldn't be that adversarial.
 
-## Architecture
+## Record Format
 
-- TypeScript
-- Browser and Server
-  - Browser & Server both verify SHA and MAC
-- Event-Driven (Streaming)
+Record format is kept in `src/constants.ts`.
 
-## Protocol
+- `setbin` - sets binary data
+- `setstr` - sets string data
+- `get` - get by record ID
+- `find` - find records by record metadata
 
-- Linked Record "Minichains"
-- Owner Record Public Key
+### Metadata
 
-## Data Format
+All metadata are optional and if not supplied, sensible defaults will be used, if supplied by the client library.
 
-Record format (tab-delimited)
+All metadata can be used as criteria for looking up a record.
 
-```js
-const record = [
-  ownerHash, // 64
-  parentHash, // 64
-  dataHash, // 128
-  encoding.padEnd(32, ' '), // 32
-  type.padEnd(32, ' '), // 32
-  tag.padEnd(32, ' '), // 32
-  signature, // 82256
-  data, // <1000000000 (1GB)
-].join('\t')
+- user - User ID (public key)
+- site: Hashed domain for site namespacing
+- link: Link to another record hash
+- tag: Plain text record tag
+- time: Used for ordering records
+- type: Extension for MIME types
+- version: For migrations
+- network: `mainnet`, `testnet`, `greennet`, `darknet`, etc.
 
-const line = [recordHash, record].join('\t') + '\n'
-```
+### Query Options
 
-## Owner Records
+`find()` has the following options:
 
-- Record Hash
-- Owner ID - Points to an owner record hash, that contains a public key for that owner. That is a record used to begin a chain of records.
+- hydrate - Automatically fetches found records and returns them. Defaults to true unless explicitly set to false.
+- order - Order results by time. 1 orders asc, -1 orders desc, 0 indicates no order is necessary (default).
+- limit - Limit results.
+- offset - Offset within results.
 
-## Find Records
+### Record Accessors
 
-Arcjet finds records by keeping track of the most recent hash an record owner has contributed. This is then used to work backwards through all records that match the tag they've specified.
+Records are kept in a binary format. To get data from a record, an accessor must be used:
 
-Tag indexes will be added soon.
+- id - record hash as a hex string
+- sig - signed data hash + metadata
+- hash - data hash
+- user - user public key
+- site - site hash
+- link - linked record
+- tag - record tag
+- time - time specified at insertion
+- type - extension, maps to MIME types
+- version - for data migration (old records cannot be updated, but they can be versioned)
+- network - which network this record was added to, useful for maintaining separation
+- content - content in raw byte format (Uint8Array)
+- hex - content in utf8 hex format
+- string - content as utf8 plain string
+- json - parses content into JSON
+- image - provides an HTML Image object with mimetype from type metadata
+- jpeg - Image as JPEG
+- png - Image as PNG
+- gif - Image as GIF
+- validate() - checks a record for security
+- empty() - empties a record from memory
 
-### Find by Owner & Tag
+## Changelog
 
-`/find/{64-character ownerHash}/{<=32-character tag}/{limit}/{skip}`
-
-(limit and skip are optional; omit them if you want all records)
-
-### Find by Data Hash
-
-`/find/{64-character ownerHash}/{128-character dataHash}`
-
-## Roadmap
-
-- Fixed to UTF-8 encoding for now. Add encodings and mimetypes.
-- More event-driven / stream features
-- Image resizing
+- [ ] 1.0 - Major release of Arcjet Platform.
+- [ ] 0.9 - Smart Contracts.
+- [ ] 0.8 - DHT (Scalability).
+- [ ] 0.7 - Distributed P2P through Gateway server.
+- [x] 0.6 - Binary encoding. Full metadata queries.
+- [x] 0.5 - Full frontend crypto. Cookies deprecated.
+- [x] 0.4 - Client library.
+- [x] 0.3 - Query by tag.
+- [x] 0.2 - Early server and CLI.
+- [x] 0.1 - Initial release.
 
 ## License
 

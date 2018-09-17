@@ -147,11 +147,14 @@ export default class Arcjet {
     }
   }
 
-  public find = async (query: IFind): Promise<Record[]> => {
+  public find = async (query: IFind): Promise<string[] | Record[]> => {
     const res = await fetch(`${this.host}/find?${qs.stringify(query)}`)
     if (res.status === 200) {
       const response = await res.text()
       const records = response.split('\n')
+      if (query.hydrate === false) {
+        return records
+      }
       const results = await Promise.all(records.map(this.get))
       return results
     } else {
