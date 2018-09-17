@@ -19,10 +19,10 @@ export const FieldPositions: HashInt = {
 export const ByteLengths: HashInt = {
   hash: 64,
   sig: 64,
+  data: 64,
   user: 64,
   site: 64,
   link: 64,
-  data: 64,
   tag: 64,
   time: 16,
   type: 16,

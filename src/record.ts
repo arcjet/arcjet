@@ -4,12 +4,14 @@ import {FieldPositions, ByteLengths, MetadataLength} from './constants'
 import {RecordMetadata} from './types'
 import {
   assert,
+  hexToBytes,
   strToBytes,
   numToBytes,
   bytesToHex,
   bytesToStr,
   bytesToInt,
   bytesEquals,
+  trimZeroes,
 } from './client_utils'
 
 export class Record {
@@ -28,11 +30,12 @@ export class Record {
     version,
     network,
   }: RecordMetadata): Uint8Array {
+    console.log('bepa', time, time && numToBytes(time, 16))
     return new Uint8Array([
-      ...(user ? strToBytes(user) : this.zeroes64),
-      ...(site ? strToBytes(site) : this.zeroes64),
-      ...(link ? strToBytes(link) : this.zeroes64),
-      ...(tag ? strToBytes(tag) : this.zeroes64),
+      ...(user ? hexToBytes(user, 64) : this.zeroes64),
+      ...(site ? hexToBytes(site, 64) : this.zeroes64),
+      ...(link ? hexToBytes(link, 64) : this.zeroes64),
+      ...(tag ? strToBytes(tag, 64) : this.zeroes64),
       ...(time ? numToBytes(time, 16) : this.zeroes16),
       ...(type ? strToBytes(type, 16) : this.zeroes16),
       ...(version ? strToBytes(version, 16) : this.zeroes16),
@@ -66,6 +69,7 @@ export class Record {
   }
 
   public getRawMetadataByField(field: string): Uint8Array {
+    console.log(field, FieldPositions[field], ByteLengths[field])
     return this.data.slice(
       FieldPositions[field],
       FieldPositions[field] + ByteLengths[field]
@@ -73,7 +77,7 @@ export class Record {
   }
 
   public get index(): Uint8Array {
-    return this.data.slice(0, FieldPositions['data'])
+    return this.data.slice(0, FieldPositions['content'])
   }
 
   public get metadata(): Uint8Array {
@@ -93,7 +97,7 @@ export class Record {
   }
 
   public get user(): string {
-    return bytesToHex(this.getRawMetadataByField('user'))
+    return trimZeroes(bytesToHex(this.getRawMetadataByField('user')))
   }
 
   public get site(): string {
@@ -133,10 +137,12 @@ export class Record {
   }
 
   public get string(): string {
+    console.log('content', this.content)
     return bytesToStr(this.content)
   }
 
   public get json() {
+    console.log('string', this.string)
     return JSON.parse(this.string)
   }
 

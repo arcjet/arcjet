@@ -7,6 +7,11 @@ export const close = promisify(fs.close)
 export const readFile = promisify(fs.readFile)
 export const writeFile = promisify(fs.writeFile)
 export const appendFile = promisify(fs.appendFile)
+export const exists = promisify(fs.exists)
+export const mkdir = promisify(fs.mkdir)
+
+export const touch = async (filename: string) =>
+  await close(await open(filename, 'w'))
 
 export const awaitOn = <R extends any, T extends {}>(
   stream: R,

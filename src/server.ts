@@ -25,13 +25,14 @@ export const server = (app: express.Express, store: Store) => {
   })
 
   app.get('/store/:hash', async (req, res) => {
-    if (req.params.hash.length !== store.shaLength) {
+    if (req.params.hash.length !== 128) {
       res.sendStatus(400)
       return
     }
     try {
       const data = await store.get(req.params.hash)
       if (data) {
+        res.contentType('application/octet-stream')
         res.status(200).send(data)
       } else {
         res.sendStatus(500)
@@ -62,6 +63,7 @@ export const server = (app: express.Express, store: Store) => {
   app.get('/find', async (req, res) => {
     try {
       const records = await store.find(req.query)
+      res.contentType('text/plain')
       res.status(200).send(records)
     } catch (err) {
       console.error(err)

@@ -2,9 +2,11 @@ export const assert = (assertion: boolean, message: string): void => {
   if (assertion === false) throw new Error(`Assertion Error: ${message}`)
 }
 
-export const hexToBytes = (hex: string): Uint8Array => {
-  const byteArray = new Uint8Array(hex.length / 2)
-  for (let c = 0, h = 0; c < hex.length; c += 2, h++) {
+export const hexToBytes = (hex: string, len?: number): Uint8Array => {
+  const byteArray = new Uint8Array(len || hex.length / 2)
+  hex = hex.length % 2 ? '0' + hex : hex
+  const offset = len ? len - hex.length / 2 : 0
+  for (let c = 0, h = offset; c < hex.length; c += 2, h++) {
     byteArray[h] = parseInt(hex.substr(c, 2), 16)
   }
   return byteArray
@@ -32,19 +34,22 @@ export const bytesToStr = (arr: Uint8Array): string => {
   return strArr.join('').trim()
 }
 
-export const strToBytes = (str: string, len?: number) => {
+export const strToBytes = (str: string, len?: number): Uint8Array => {
   const arr = new Uint8Array(len || str.length)
-  for (let i = 0, ii = str.length; i < ii; i++) {
-    arr[i] = str.charCodeAt(i)
+  const pos = len ? len - str.length : 0
+  for (let i = 0, ii = len || str.length; i < ii; i++) {
+    arr[i] = i >= pos ? str.charCodeAt(i - pos) : 32 // charCode for a space
   }
   return arr
 }
 
 export const numToBytes = (num: number, len: number): Uint8Array =>
-  hexToBytes(getFixedHex(num, len))
+  hexToBytes(num.toString(16), len)
 
 export const bytesToInt = (bytes: Uint8Array): number =>
   parseInt(bytesToHex(bytes), 16)
+
+export const trimZeroes = (str: string): string => str.replace(/^0+/, '')
 
 export const bytesEquals = (
   bytesA: Uint8Array,

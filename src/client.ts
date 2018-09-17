@@ -1,5 +1,5 @@
 import * as nacl from 'tweetnacl'
-import * as QRCode from 'qrcode'
+// import * as QRCode from 'qrcode'
 import * as qs from 'querystring'
 
 import {
@@ -7,7 +7,6 @@ import {
   hexToBytes,
   bytesToHex,
   strToBytes,
-  blobToBytes,
   bytesToBlob,
 } from './client_utils'
 import {ArcjetStorageKeys, ArcjetStorage, IFind, RecordMetadata} from './types'
@@ -31,12 +30,12 @@ export default class Arcjet {
     this.siteHash = siteHash || hashAsString(window.location.hostname)
   }
 
-  private download(data: string) {
-    var link = document.createElement('a')
-    link.download = 'filename.png'
-    link.href = data
-    link.click()
-  }
+  // private download(data: string) {
+  //   var link = document.createElement('a')
+  //   link.download = 'filename.png'
+  //   link.href = data
+  //   link.click()
+  // }
 
   private async save(keys: any) {
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PUBLIC_KEY, keys.publicKey)
@@ -75,17 +74,25 @@ export default class Arcjet {
       const keys = nacl.sign.keyPair()
       const privateKey = bytesToHex(keys.secretKey)
       const publicKey = bytesToHex(keys.publicKey)
-      const qr = await QRCode.toDataURL(privateKey)
-      if (document) this.download(qr)
+      // const qr = await QRCode.toDataURL(privateKey)
+      // if (document) this.download(qr)
       if (localStorage) await this.save({privateKey, publicKey})
     } catch (err) {
       console.error(err)
     }
   }
 
+  public async setstr(content: string, metadata: RecordMetadata) {
+    this.set(strToBytes(content), metadata)
+  }
+
+  public async setbin(content: Uint8Array, metadata: RecordMetadata) {
+    this.set(content, metadata)
+  }
+
   // TODO better error handling
-  public async set(
-    content: string,
+  private set = async (
+    content: Uint8Array,
     {
       site = this.siteHash,
       link = this.emptyHash,
@@ -95,14 +102,14 @@ export default class Arcjet {
       version = '0.0.0',
       network = 'mainnet',
     }: RecordMetadata
-  ) {
+  ) => {
     const {
       ARCJET_PUBLIC_KEY: user,
       ARCJET_PRIVATE_KEY: privateKey,
     } = this.load()
 
     const record = new Record(
-      strToBytes(content),
+      content,
       {
         user,
         site,
@@ -130,18 +137,17 @@ export default class Arcjet {
     return recID
   }
 
-  public async get(recordHash: string): Promise<Record> {
+  public get = async (recordHash: string): Promise<Record> => {
     const res = await fetch(`${this.host}/store/${recordHash}`)
     if (res.status === 200) {
-      const record = await res.blob()
-      const bytes: Uint8Array = (await blobToBytes(record)) as Uint8Array
-      return new Record(bytes)
+      const bytes = await res.arrayBuffer()
+      return new Record(new Uint8Array(bytes))
     } else {
       throw new Error(res.statusText)
     }
   }
 
-  public async find(query: IFind): Promise<Record[]> {
+  public find = async (query: IFind): Promise<Record[]> => {
     const res = await fetch(`${this.host}/find?${qs.stringify(query)}`)
     if (res.status === 200) {
       const response = await res.text()
