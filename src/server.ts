@@ -1,17 +1,16 @@
 import * as express from 'express'
 import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
-import {strict as assert} from 'assert'
+import { strict as assert } from 'assert'
 
 import Store from './store'
-// import {homepage} from './html'
 
 export const server = (store: Store, port: number) =>
   new Promise((resolve, reject) => {
     const app = express()
 
     var corsOptionsDelegate = function(req: express.Request, cb: any) {
-      cb(null, {origin: req.headers.origin, credentials: true})
+      cb(null, { origin: req.headers.origin, credentials: false })
     }
 
     app.use(cors(corsOptionsDelegate))
@@ -20,7 +19,7 @@ export const server = (store: Store, port: number) =>
         defaultCharset: 'utf-8',
         limit: '1gb',
         type: '*/*',
-      })
+      }),
     )
 
     app.get('/', (req, res) => {
@@ -67,7 +66,7 @@ export const server = (store: Store, port: number) =>
           req.on('end', async () => {
             try {
               const hash = await store.set(
-                Buffer.concat(chunks).toString('utf8')
+                Buffer.concat(chunks).toString('utf8'),
               )
               res.statusCode = 200
               res.contentType('text/plain')
@@ -86,7 +85,7 @@ export const server = (store: Store, port: number) =>
 
     app.get('/find/:owner/:tag', async (req, res) => {
       try {
-        const {owner, tag} = req.params
+        const { owner, tag } = req.params
         const records = await store.findByTag(owner, tag)
         res.status(200).send(records)
       } catch (err) {
@@ -97,7 +96,7 @@ export const server = (store: Store, port: number) =>
 
     app.get('/find/:owner/:tag/:limit', async (req, res) => {
       try {
-        const {owner, tag, limit} = req.params
+        const { owner, tag, limit } = req.params
         const records = await store.findByTag(owner, tag, limit)
         res.status(200).send(records)
       } catch (err) {
@@ -108,7 +107,7 @@ export const server = (store: Store, port: number) =>
 
     app.get('/find/:owner/:tag/:limit/:offset', async (req, res) => {
       try {
-        const {owner, tag, limit, offset} = req.params
+        const { owner, tag, limit, offset } = req.params
         const records = await store.findByTag(owner, tag, limit, offset)
         res.status(200).send(records)
       } catch (err) {
@@ -121,7 +120,7 @@ export const server = (store: Store, port: number) =>
       try {
         assert.ok(
           req.params.ownerHash.length === store.shaLength,
-          'Request should have sent a 512-bit hash'
+          'Request should have sent a 512-bit hash',
         )
         const parentHash = store.getCurrentParent(req.params.ownerHash)
         res.status(200).send(parentHash)

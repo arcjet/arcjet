@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import {promisify} from 'util'
+import { promisify } from 'util'
 
 export const open = promisify(fs.open)
 export const close = promisify(fs.close)
@@ -8,7 +8,7 @@ export const appendFile = promisify(fs.appendFile)
 
 export const awaitOn = <R extends any, T extends {}>(
   stream: R,
-  event: string
+  event: string,
 ): Promise<T> =>
   new Promise((resolve, reject) => {
     stream.on(event, (data: T) => {

@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as got from 'got'
 
 import Store from './store'
-import {server} from './server'
+import { server } from './server'
 const pkg = require('../package.json')
 
 const DEFAULT_PORT = 3000
@@ -20,7 +20,7 @@ program
     'Port number to listen on',
     program.INT,
     DEFAULT_PORT,
-    true
+    true,
   )
   .action(async (args, options, logger) => {
     try {
@@ -44,12 +44,12 @@ program
         {
           method: 'POST',
           encoding: 'utf8',
-        }
+        },
       )
 
       const stream = fs.createReadStream(
         path.resolve(process.cwd(), args.file),
-        'utf8'
+        'utf8',
       )
 
       stream.pipe(request)

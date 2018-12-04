@@ -1,6 +1,6 @@
 import test from 'ava'
 import * as got from 'got'
-import {parseRecord} from './parser'
+import { parseRecord } from './parser'
 
 const host = '127.0.0.1:3000'
 
@@ -14,13 +14,13 @@ test.before(async () => {
   testCookies = (generate.headers['set-cookie'] || []).join(';')
   ARCJET_OWNER_HASH = ''
 
-  const {body: body1} = await got.post(`http://${host}/store/test`, {
+  const { body: body1 } = await got.post(`http://${host}/store/test`, {
     body: 'thing1',
     headers: {
       cookie: testCookies,
     },
   })
-  const {body: body2} = await got.post(`http://${host}/store/test`, {
+  const { body: body2 } = await got.post(`http://${host}/store/test`, {
     body: 'thing2',
     headers: {
       cookie: testCookies,
@@ -44,7 +44,7 @@ test.serial('store sets a value and returns expected SHA3', async t => {
 
   t.is(
     parseRecord(record.body).dataHash,
-    '7f9a89bf4717a0dd75a744f89f5d27eb40bf28654c895dc103f5f280497a432bcf79001b7dc4d76f1e4453308bb15842a840f4e2f0ac1c920fc19be45c6e0fa9'
+    '7f9a89bf4717a0dd75a744f89f5d27eb40bf28654c895dc103f5f280497a432bcf79001b7dc4d76f1e4453308bb15842a840f4e2f0ac1c920fc19be45c6e0fa9',
   )
 })
 

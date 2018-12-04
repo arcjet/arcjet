@@ -1,9 +1,9 @@
 import * as nacl from 'tweetnacl'
 import * as QRCode from 'qrcode'
 
-import {parseRecord} from './parser'
-import {assert, hexToBytes, bytesToHex} from './client_utils'
-import {HashHash, ArcjetStorageKeys, ArcjetStorage} from './types'
+import { parseRecord } from './parser'
+import { assert, hexToBytes, bytesToHex } from './client_utils'
+import { HashHash, ArcjetStorageKeys, ArcjetStorage } from './types'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -40,7 +40,7 @@ export default class Arcjet {
     localStorage.setItem(ArcjetStorageKeys.ARCJET_PRIVATE_KEY, keys.privateKey)
     localStorage.setItem(
       ArcjetStorageKeys.ARCJET_OWNER_HASH,
-      this.defaultOwnerHash
+      this.defaultOwnerHash,
     )
     const ownerHash = await this.set(keys.publicKey, 'owner')
     localStorage.setItem(ArcjetStorageKeys.ARCJET_OWNER_HASH, ownerHash)
@@ -48,13 +48,13 @@ export default class Arcjet {
 
   private load(): ArcjetStorage {
     const ARCJET_OWNER_HASH = localStorage.getItem(
-      ArcjetStorageKeys.ARCJET_OWNER_HASH
+      ArcjetStorageKeys.ARCJET_OWNER_HASH,
     )
     const ARCJET_PUBLIC_KEY = localStorage.getItem(
-      ArcjetStorageKeys.ARCJET_PUBLIC_KEY
+      ArcjetStorageKeys.ARCJET_PUBLIC_KEY,
     )
     const ARCJET_PRIVATE_KEY = localStorage.getItem(
-      ArcjetStorageKeys.ARCJET_PRIVATE_KEY
+      ArcjetStorageKeys.ARCJET_PRIVATE_KEY,
     )
 
     if (ARCJET_OWNER_HASH && ARCJET_PUBLIC_KEY && ARCJET_PRIVATE_KEY) {
@@ -79,15 +79,15 @@ export default class Arcjet {
       const publicKey = bytesToHex(keys.publicKey)
       const qr = await QRCode.toDataURL(privateKey)
       if (document) this.download(qr)
-      if (localStorage) await this.save({privateKey, publicKey})
+      if (localStorage) await this.save({ privateKey, publicKey })
     } catch (err) {
       console.error(err)
     }
   }
 
   public validate = async (record: string): Promise<string> => {
-    const {recordHash, ownerHash, dataHash, signature, data} = parseRecord(
-      record
+    const { recordHash, ownerHash, dataHash, signature, data } = parseRecord(
+      record,
     )
     let ownerPublicKey = this.owners[ownerHash]
 
@@ -103,7 +103,7 @@ export default class Arcjet {
     const verified = nacl.sign.detached.verify(
       hexToBytes(recDataHash),
       hexToBytes(signature),
-      hexToBytes(ownerPublicKey)
+      hexToBytes(ownerPublicKey),
     )
 
     console.log(
@@ -111,7 +111,7 @@ export default class Arcjet {
       recDataHash === dataHash,
       recRecordHash === recordHash,
       recRecordHash,
-      recordHash
+      recordHash,
     )
 
     if (verified && recDataHash === dataHash && recRecordHash === recordHash) {
@@ -134,7 +134,7 @@ export default class Arcjet {
     data: string,
     tag: string,
     encoding = 'utf-8',
-    type = 'text/plain'
+    type = 'text/plain',
   ) {
     const {
       ARCJET_OWNER_HASH: ownerHash,
@@ -173,7 +173,7 @@ export default class Arcjet {
     const recRecordHash = await res.text()
     assert(
       recordHash === recRecordHash,
-      'Record hash from server must match computed record hash'
+      'Record hash from server must match computed record hash',
     )
     return recordHash
   }
@@ -182,7 +182,7 @@ export default class Arcjet {
     ownerHash: string,
     tag: string,
     limit?: number,
-    offset?: number
+    offset?: number,
   ): Promise<string[]> {
     const url = [this.host, 'find', ownerHash, tag]
     if (limit) url.push(limit.toString())

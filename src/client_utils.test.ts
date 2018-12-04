@@ -1,11 +1,11 @@
 import test from 'ava'
 
-import {hexToBytes, bytesToHex} from './client_utils'
+import { hexToBytes, bytesToHex } from './client_utils'
 
 test('hexToBytes', t => {
   t.is(
     hexToBytes('f0000fff').toString(),
-    Uint8Array.from([240, 0, 15, 255]).toString()
+    Uint8Array.from([240, 0, 15, 255]).toString(),
   )
 })
 

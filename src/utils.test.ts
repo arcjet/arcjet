@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import {getFixedHex} from './utils'
+import { getFixedHex } from './utils'
 
 test('date is represented as a fixed-length hexadecimal integer', t => {
   const date = 1533859068177

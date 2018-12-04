@@ -1,4 +1,4 @@
-import {Topic, Hash, Data, Listener, Subscriber, Subscribers} from './types'
+import { Topic, Hash, Data, Listener, Subscriber, Subscribers } from './types'
 
 class Stream {
   private subscribers: Subscribers = {}

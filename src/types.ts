@@ -7,7 +7,7 @@ export type Topic = string
 
 export type Listener = (hash: Hash, data: Data) => void
 export type Subscriber = (data: Data) => void
-export type Subscribers = {[key: string]: Subscriber}
+export type Subscribers = { [key: string]: Subscriber }
 
 export interface Result {
   hash: Hash
@@ -34,8 +34,8 @@ export enum ArcjetStorageKeys {
 export type FalsyArcjetStorage = ArcjetStorage | undefined
 
 export type FalsyString = string | false
-export type HashInt = {[hash: string]: number}
-export type HashHash = {[hash: string]: Hash}
+export type HashInt = { [hash: string]: number }
+export type HashHash = { [hash: string]: Hash }
 
 export interface ArcjetRecord {
   recordHash: string

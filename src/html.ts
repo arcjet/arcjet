@@ -1,4 +1,4 @@
-import {Key} from './types'
+import { Key } from './types'
 
 export const homepage = (hasCookie: boolean) => `<!doctype html>
   <html>

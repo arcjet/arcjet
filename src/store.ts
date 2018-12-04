@@ -1,12 +1,12 @@
 import * as fs from 'fs'
 import * as readline from 'readline'
-import {strict as assert} from 'assert'
+import { strict as assert } from 'assert'
 import * as nacl from 'tweetnacl'
 
-import {Path, Hash, HashInt, HashHash} from './types'
-import {open, close, read, appendFile} from './utils'
-import {hexToBytes, bytesToHex} from './client_utils'
-import {parseRecord} from './parser'
+import { Path, Hash, HashInt, HashHash } from './types'
+import { open, close, read, appendFile } from './utils'
+import { hexToBytes, bytesToHex } from './client_utils'
+import { parseRecord } from './parser'
 
 const hashAsByteArray = (data: string): Uint8Array =>
   nacl.hash(hexToBytes(data))
@@ -80,25 +80,25 @@ class Store {
     assert.ok(data.includes('\n') === false, 'Data must encode all newlines')
     assert.ok(
       ownerHash.length === this.shaLength,
-      'Supplied Owner Hash invalid'
+      'Supplied Owner Hash invalid',
     )
     assert.ok(
       encoding.length <= 32,
-      'Encoding length must be less than or equal to 32 characters'
+      'Encoding length must be less than or equal to 32 characters',
     )
     assert.ok(
       type.length <= 32,
-      'Type length must be less than or equal to 32 characters'
+      'Type length must be less than or equal to 32 characters',
     )
     assert.ok(
       tag.length <= 32,
-      'Tag length must be less than or equal to 32 characters'
+      'Tag length must be less than or equal to 32 characters',
     )
     assert.ok(tag.length > 0, 'Tag must be provided')
     assert.ok(hashAsString(data) === dataHash, 'dataHash must be valid')
     assert.ok(
       parentHash === this.getCurrentParent(ownerHash),
-      'parentHash CAS error'
+      'parentHash CAS error',
     )
 
     const verifiedRecord = [
@@ -135,7 +135,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 128 characters in length'
+      'record hash must be 128 characters in length',
     )
 
     const position = this.positions[hash]
@@ -147,7 +147,7 @@ class Store {
 
     let recordBuffer = Buffer.alloc(length, 'utf8')
     const fd = await this.open(this.path)
-    const {buffer} = await read(fd, recordBuffer, 0, length, position)
+    const { buffer } = await read(fd, recordBuffer, 0, length, position)
     const recordString = buffer.toString('utf8')
     return recordString
   }
@@ -156,7 +156,7 @@ class Store {
     assert.ok(typeof hash === 'string', 'record hash must be a string')
     assert.ok(
       hash.length === this.shaLength,
-      'record hash must be 128 characters in length'
+      'record hash must be 128 characters in length',
     )
 
     const position = this.positions[hash]
@@ -179,12 +179,12 @@ class Store {
     ownerHash: Hash,
     tag: string,
     limit: number = 0,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<string> {
     assert.ok(typeof ownerHash === 'string', 'owner hash must be a string')
     assert.ok(
       ownerHash.length === this.shaLength,
-      'owner hash must be 128 characters in length'
+      'owner hash must be 128 characters in length',
     )
     assert.ok(typeof tag === 'string', 'tag must be a string')
     assert.ok(tag.length <= 32, 'tag must be 32 characters in length or less')
@@ -204,7 +204,7 @@ class Store {
 
     while (hash !== this.emptyHash && go) {
       let recordBuffer = Buffer.alloc(length, 'utf8')
-      const {buffer} = await read(fd, recordBuffer, 0, length, position)
+      const { buffer } = await read(fd, recordBuffer, 0, length, position)
       const recordString = buffer.toString('utf8')
       const record = parseRecord(recordString)
       hash = record.parentHash
